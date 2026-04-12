@@ -6,10 +6,11 @@ COPY DataShare.Domain/*.csproj DataShare.Domain/
 COPY DataShare.Application/*.csproj DataShare.Application/
 COPY DataShare.Infrastructure/*.csproj DataShare.Infrastructure/
 COPY DataShare.Api/*.csproj DataShare.Api/
+COPY DataShare.Tests/*.csproj DataShare.Tests/
 RUN dotnet restore
 
 COPY . .
-RUN dotnet publish DataShare.Api -c Release -o /app/publish --no-restore
+RUN dotnet publish DataShare.Api -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
