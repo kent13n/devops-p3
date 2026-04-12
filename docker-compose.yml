@@ -1,0 +1,43 @@
+services:
+  web:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+  api:
+    build: ./backend
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=datashare;Username=postgres;Password=postgres
+      - Jwt__Secret=dev-secret-key-change-in-production-minimum-32-chars
+      - Jwt__Issuer=DataShare
+      - Jwt__Audience=DataShare
+      - Jwt__ExpirationInHours=24
+      - FileStorage__BasePath=/var/datashare/files
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      - files-data:/var/datashare/files
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=datashare
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+  files-data:
