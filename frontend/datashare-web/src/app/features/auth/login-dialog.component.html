@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>Connexion</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput formControlName="email" type="email" autocomplete="email">
+      @if (form.controls.email.hasError('required') && form.controls.email.touched) {
+        <mat-error>L'email est requis</mat-error>
+      }
+      @if (form.controls.email.hasError('email') && form.controls.email.touched) {
+        <mat-error>Format d'email invalide</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Mot de passe</mat-label>
+      <input matInput formControlName="password" type="password" autocomplete="current-password">
+      @if (form.controls.password.hasError('required') && form.controls.password.touched) {
+        <mat-error>Le mot de passe est requis</mat-error>
+      }
+    </mat-form-field>
+
+    @if (errorMessage) {
+      <p class="error-message">{{ errorMessage }}</p>
+    }
+
+    <button mat-flat-button type="submit" [disabled]="loading || form.invalid"
+            style="background-color: #1e1e1e; color: white;">
+      {{ loading ? 'Connexion...' : 'Se connecter' }}
+    </button>
+  </form>
+
+  <p class="switch-link">
+    Pas encore de compte ? <a (click)="switchToRegister()">Créer un compte</a>
+  </p>
+</mat-dialog-content>

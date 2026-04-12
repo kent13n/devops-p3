@@ -1,0 +1,61 @@
+.landing {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FF8A65 0%, #FFAB91 50%, #FFE0B2 100%);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.landing-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.landing-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #1e1e1e;
+  text-align: center;
+}
+
+.upload-btn {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background-color: #1e1e1e;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.upload-icon {
+  color: white;
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+}
+
+.landing-footer {
+  text-align: center;
+  padding: 1rem;
+  color: rgba(30, 30, 30, 0.6);
+  font-size: 0.875rem;
+}
