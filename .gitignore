@@ -1,0 +1,56 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.DotSettings.user
+publish/
+
+# Angular
+node_modules/
+dist/
+.angular/
+.sass-cache/
+*.tsbuildinfo
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Environnement
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+
+# Stockage fichiers (volume local)
+uploads/
+files-data/
+
+# Couverture de tests
+coverage/
+TestResults/
+*.coverage
+*.coveragexml
+
+# Logs
+logs/
+*.log
+
+# Copies de travail des specs
+docs/specifications.pdf
+docs/modele-doc-technique.odt
