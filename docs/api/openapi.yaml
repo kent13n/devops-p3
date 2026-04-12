@@ -1,0 +1,588 @@
+openapi: 3.0.3
+info:
+  title: DataShare API
+  description: |
+    API REST de la plateforme DataShare — transfert sécurisé de fichiers avec liens temporaires.
+
+    **Périmètre MVP** : authentification, upload (connecté + anonyme), téléchargement via lien (avec mot de passe optionnel), historique, suppression, tags, expiration automatique.
+
+    **Authentification** : JWT Bearer. Token retourné à l'inscription et à la connexion, valide 24 heures.
+  version: 1.0.0
+  contact:
+    name: DataShare
+servers:
+  - url: http://localhost:8080
+    description: Environnement local Docker
+  - url: http://localhost:5000
+    description: Environnement de développement .NET (sans Docker)
+
+tags:
+  - name: Auth
+    description: Inscription, connexion, identité
+  - name: Files
+    description: Upload, historique, suppression
+  - name: Download
+    description: Téléchargement public via lien
+  - name: Tags
+    description: Gestion des tags utilisateur
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Création de compte
+      description: |
+        Crée un nouveau compte utilisateur. L'email doit être unique. Le mot de passe doit faire au moins 8 caractères.
+        Retourne l'utilisateur créé et un token JWT immédiatement utilisable.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Email déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Connexion utilisateur
+      description: |
+        Authentifie un utilisateur existant. Retourne un token JWT valide 24h.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Utilisateur courant
+      description: Retourne les informations de l'utilisateur authentifié.
+      responses:
+        '200':
+          description: Utilisateur courant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/files:
+    post:
+      tags: [Files]
+      summary: Upload d'un fichier
+      description: |
+        Téléverse un fichier. Retourne les métadonnées et le token de téléchargement.
+
+        **Authentification optionnelle** : l'endpoint accepte les requêtes avec ou sans JWT.
+        - Si un token JWT valide est fourni → le fichier est lié au compte de l'utilisateur, retrouvable dans son historique. Les tags sont pris en compte.
+        - Si aucun token n'est fourni → upload anonyme, le fichier n'a pas de propriétaire et n'apparaît dans aucun historique. Les tags sont ignorés.
+
+        **Contraintes** :
+        - Taille maximale : 1 Go (1 073 741 824 octets)
+        - Extensions interdites : `.exe`, `.bat`, `.cmd`, `.com`, `.scr`, `.msi`, `.sh`
+        - `expiresInDays` : entre 1 et 7, défaut 7
+        - `password` (optionnel) : minimum 6 caractères si renseigné
+        - `tags` (optionnel, ignoré si non authentifié) : tableau de strings ≤ 30 caractères chacun
+      security:
+        - bearerAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUploadRequest'
+      responses:
+        '201':
+          description: Fichier téléversé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileDto'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '413':
+          description: Fichier trop volumineux (> 1 Go)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Type de fichier interdit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [Files]
+      summary: Historique des fichiers de l'utilisateur
+      description: |
+        Liste les fichiers téléversés par l'utilisateur connecté.
+        Le filtre `status` permet d'afficher tous les fichiers, uniquement les actifs ou uniquement les expirés.
+        Tri par défaut : `CreatedAt` décroissant.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, active, expired]
+            default: all
+          description: Filtre sur l'état d'expiration
+      responses:
+        '200':
+          description: Liste des fichiers de l'utilisateur
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileHistoryItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/files/{id}:
+    delete:
+      tags: [Files]
+      summary: Suppression d'un fichier
+      description: |
+        Supprime physiquement le fichier et ses métadonnées. Action irréversible.
+        L'utilisateur ne peut supprimer que ses propres fichiers.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Fichier supprimé
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: L'utilisateur n'est pas propriétaire du fichier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Fichier introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/download/{token}:
+    get:
+      tags: [Download]
+      summary: Métadonnées du fichier avant téléchargement
+      description: |
+        Retourne les métadonnées publiques du fichier associé au token. Ne nécessite aucune authentification.
+        Permet à l'interface de téléchargement d'afficher le nom, la taille, la date d'expiration, et de savoir s'il faut demander un mot de passe.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Token de téléchargement (généré à l'upload)
+      responses:
+        '200':
+          description: Métadonnées publiques du fichier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMetadataDto'
+        '404':
+          description: Token inconnu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '410':
+          description: Lien expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Download]
+      summary: Téléchargement effectif du fichier
+      description: |
+        Renvoie le contenu binaire du fichier. Si le fichier est protégé par mot de passe (US09),
+        celui-ci doit être fourni dans le corps de la requête.
+
+        Le passage par POST (plutôt que GET avec query string) évite que le mot de passe se retrouve dans les logs serveur, l'historique du navigateur ou le referer.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadRequest'
+      responses:
+        '200':
+          description: Contenu binaire du fichier
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: 'attachment; filename="..."'
+            Content-Length:
+              schema:
+                type: integer
+              description: Taille du fichier en octets
+        '401':
+          description: Mot de passe absent ou incorrect (fichier protégé)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Token inconnu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '410':
+          description: Lien expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tags:
+    get:
+      tags: [Tags]
+      summary: Liste des tags de l'utilisateur
+      description: Retourne le catalogue de tags propre à l'utilisateur connecté.
+      responses:
+        '200':
+          description: Liste des tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/tags/{id}:
+    delete:
+      tags: [Tags]
+      summary: Suppression d'un tag
+      description: |
+        Supprime un tag du catalogue de l'utilisateur. Les associations `FileTag` correspondantes sont supprimées en cascade.
+        Les fichiers associés ne sont pas supprimés.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tag supprimé
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: L'utilisateur n'est pas propriétaire du tag
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Tag introuvable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Token JWT obtenu via `/api/auth/login` ou `/api/auth/register`. À envoyer dans le header `Authorization: Bearer <token>`.'
+
+  responses:
+    Unauthorized:
+      description: Token absent, invalide ou expiré
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ValidationError:
+      description: Erreur de validation des données envoyées
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: VALIDATION_ERROR
+            message: Une ou plusieurs valeurs sont invalides
+            details:
+              email: 'Format invalide'
+              password: 'Minimum 8 caractères'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Code d'erreur stable, exploitable côté client (ex. `EMAIL_ALREADY_USED`, `FILE_TOO_LARGE`)
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          description: Message lisible (en français)
+          example: Une ou plusieurs valeurs sont invalides
+        details:
+          type: object
+          additionalProperties: true
+          description: Détails optionnels, ex. erreurs de champ par champ
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 256
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+      example:
+        email: claire.martin@example.com
+        password: MotDePasseSolide!
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      required: [user, token, expiresAt]
+      properties:
+        user:
+          $ref: '#/components/schemas/UserDto'
+        token:
+          type: string
+          description: Token JWT à utiliser dans le header Authorization
+        expiresAt:
+          type: string
+          format: date-time
+          description: Date/heure UTC d'expiration du token
+
+    UserDto:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+
+    FileUploadRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Le fichier à téléverser. Taille maximale 1 Go.
+        expiresInDays:
+          type: integer
+          minimum: 1
+          maximum: 7
+          default: 7
+        password:
+          type: string
+          minLength: 6
+          maxLength: 128
+          description: Mot de passe optionnel pour protéger le téléchargement
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 30
+          description: Tags à attacher au fichier (créés automatiquement s'ils n'existent pas)
+
+    DownloadRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: Mot de passe à fournir si le fichier est protégé
+
+    FileDto:
+      type: object
+      required: [id, originalName, sizeBytes, mimeType, downloadToken, downloadUrl, expiresAt, isProtected, tags, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        originalName:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+        downloadToken:
+          type: string
+          description: Token à utiliser pour télécharger le fichier
+        downloadUrl:
+          type: string
+          format: uri
+          description: URL de téléchargement complète, à partager avec le destinataire
+        expiresAt:
+          type: string
+          format: date-time
+        isProtected:
+          type: boolean
+          description: True si un mot de passe est requis pour télécharger
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    FileHistoryItem:
+      type: object
+      required: [id, originalName, sizeBytes, mimeType, expiresAt, isExpired, isProtected, tags, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        originalName:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+        downloadUrl:
+          type: string
+          format: uri
+          description: URL de partage. Absente si le fichier est expiré.
+        expiresAt:
+          type: string
+          format: date-time
+        isExpired:
+          type: boolean
+          description: True si `now > expiresAt` (calculé côté serveur)
+        isProtected:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    FileMetadataDto:
+      type: object
+      description: Vue publique d'un fichier (avant téléchargement). Ne contient aucune information sur le propriétaire.
+      required: [originalName, sizeBytes, mimeType, expiresAt, isProtected]
+      properties:
+        originalName:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        mimeType:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        isProtected:
+          type: boolean
+          description: True si un mot de passe est requis pour télécharger
+
+    TagDto:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 30
