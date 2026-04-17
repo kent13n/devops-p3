@@ -5,11 +5,11 @@
     <h1 class="landing-title">Tu veux partager un fichier ?</h1>
 
     <button class="upload-btn" (click)="onUploadClick()" aria-label="Téléverser un fichier">
-      <mat-icon class="upload-icon">cloud_upload</mat-icon>
+      <span class="upload-btn-inner">
+        <img src="upload-cloud.svg" alt="" class="upload-icon" width="48" height="48">
+      </span>
     </button>
   </div>
 
-  <footer class="landing-footer">
-    <p>Copyright DataShare® 2025</p>
-  </footer>
+  <app-footer />
 </div>

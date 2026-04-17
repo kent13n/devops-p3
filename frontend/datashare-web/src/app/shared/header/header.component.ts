@@ -19,7 +19,7 @@ export class HeaderComponent {
 
   openLoginDialog(): void {
     this.dialog.open(LoginDialogComponent, {
-      width: '400px',
+      width: '480px',
       panelClass: 'auth-dialog'
     });
   }

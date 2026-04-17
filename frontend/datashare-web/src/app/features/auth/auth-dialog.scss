@@ -1,0 +1,111 @@
+:host {
+  display: block;
+  background: white;
+}
+
+.auth-modal {
+  padding: 2.5rem;
+  background: white;
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e1e1e;
+  margin: 0 0 1.5rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1e1e1e;
+  }
+
+  input {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+    color: #1e1e1e;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+
+    &::placeholder {
+      color: #bdbdbd;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #BA681F;
+      box-shadow: 0 0 0 3px rgba(186, 104, 31, 0.15);
+    }
+
+    &.invalid {
+      border-color: #d32f2f;
+    }
+  }
+}
+
+.field-error {
+  color: #d32f2f;
+  font-size: 0.8rem;
+}
+
+.error-message {
+  color: #d32f2f;
+  text-align: center;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.link-switch {
+  background: none;
+  border: none;
+  color: #BA681F;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 0.25rem;
+  font-family: inherit;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.btn-submit {
+  background: #FFF3E0;
+  color: #BA681F;
+  border: 1px solid #FFAB91;
+  border-radius: 8px;
+  padding: 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  font-family: inherit;
+
+  &:hover:not(:disabled) {
+    background: #FFE0B2;
+    border-color: #BA681F;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

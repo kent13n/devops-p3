@@ -181,7 +181,7 @@ Pour le MVP, on émet un **access token de 24h sans refresh token**. Avantages :
 - **Facilite la démo** : un crash ou un comportement étrange en démo ? `docker compose down -v && docker compose up` repart à zéro en une commande
 - **Production-ready light** : le même `docker-compose.yml` (avec quelques variables d'environnement adaptées) peut servir pour un déploiement sur un VPS pour étendre le MVP au-delà de la démo
 
-## 9. Tests : xUnit + Testcontainers + Cypress
+## 9. Tests : xUnit + Testcontainers + Playwright
 
 ### Choix retenus
 
@@ -189,14 +189,14 @@ Pour le MVP, on émet un **access token de 24h sans refresh token**. Avantages :
 |---|---|---|
 | Unit tests back | **xUnit + FluentAssertions + Moq** | Use cases isolés (génération de token, calcul d'expiration, validators) |
 | Tests d'intégration back | **Testcontainers.PostgreSQL** | Endpoints critiques avec une vraie base PostgreSQL en container temporaire |
-| Unit tests front | **Jasmine + Karma** (par défaut Angular CLI) | Services Angular et logique des composants |
-| End-to-end | **Cypress** | 2-3 scénarios critiques : inscription → upload → download, login → suppression, expiration |
+| Unit tests front | **Vitest** | Services Angular et logique des composants |
+| End-to-end | **Playwright** | 2-3 scénarios critiques : inscription → upload → download, login → suppression, expiration |
 
 ### Justification
 
 - **xUnit** est le standard de facto en .NET, parfaitement intégré dans le tooling Visual Studio Code et la CLI dotnet
 - **Testcontainers** permet d'exécuter les tests d'intégration contre un **vrai PostgreSQL** dans un container Docker temporaire, plutôt que de mocker EF Core ou d'utiliser SQLite in-memory. Cela évite la classe de bugs « ça passe en mock mais ça plante en prod » et donne une vraie confiance dans les tests
-- **Cypress** offre des scénarios E2E lisibles, des screenshots/vidéos automatiques en cas d'échec, et une UI de debug très pédagogique pour la soutenance
+- **Playwright** offre des scénarios E2E lisibles, des screenshots/vidéos/traces automatiques en cas d'échec, le support multi-navigateurs (Chromium, Firefox, WebKit) et une exécution parallèle native — plus rapide et plus fiable que les alternatives
 
 L'objectif de couverture est fixé à **70 %** (seuil indicatif des specs). Une capture d'écran du rapport de couverture sera incluse dans `TESTING.md`.
 
@@ -245,7 +245,7 @@ Toutes ces évolutions sont documentées dans `MAINTENANCE.md` (étape 5) avec l
 - `@angular/core`, `@angular/router`, `@angular/forms`, `@angular/common`, `@angular/material`, `@angular/cdk` (21.x)
 - `tailwindcss`, `postcss`, `autoprefixer`
 - `rxjs` (inclus avec Angular)
-- Tests : `jasmine`, `karma`, `cypress`
+- Tests : `vitest`, `@playwright/test`
 
 ### Infrastructure
 

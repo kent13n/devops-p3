@@ -9,7 +9,6 @@ import { HeaderComponent } from '../../shared/header/header.component';
   styles: [`
     .my-files-page {
       min-height: 100vh;
-      background: linear-gradient(135deg, #FF8A65 0%, #FFAB91 50%, #FFE0B2 100%);
     }
     .my-files-content {
       padding: 6rem 2rem 2rem;
