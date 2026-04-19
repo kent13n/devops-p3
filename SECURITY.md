@@ -59,7 +59,7 @@ Résultats, toutes sévérités confondues :
 | `projet-3-api:latest` | Ubuntu 24.04 + .NET 10 | 0 | 0 | 1 | 4 |
 | `projet-3-web:latest` | Alpine 3.23.4 + nginx | 0 | 0 | 0 | 0 |
 
-Captures d'écran (scan `--severity HIGH,CRITICAL`) :
+Captures d'écran (scan complet, toutes sévérités) :
 
 ![Trivy projet-3-api](docs/trivy-api.png)
 
