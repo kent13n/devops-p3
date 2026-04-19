@@ -26,7 +26,7 @@ Objectif de couverture : **≥ 70 %** sur `DataShare.Application` + `DataShare.A
 | US05 | Historique (my-files) | FileListService, FileStatusFilterParser | GET /api/files?status=… | auth.spec.ts (accès espace) | Filtre all/active/expired, tri CreatedAt DESC, purged visible sans lien |
 | US06 | Suppression fichier | FileDeleteService | DELETE /api/files/:id | — | 204 propriétaire, 404 ownership différent (anti-IDOR) |
 | US07 | Upload anonyme sans tags | FileUploadService | POST /api/files (anon) | — | Tags ignorés si ownerId absent |
-| US08 | Tags utilisateur | FileUploadService.GetOrCreateTagAsync (+ race condition) | POST /api/files avec tags | — | Tags persistés, race condition gérée sans DbUpdateException |
+| US08 | Tags utilisateur | FileUploadService.GetOrCreateTagAsync (flux de retry) | POST /api/files avec tags + 2 uploads concurrents même tag (non-régression) | — | Tags persistés, race condition gérée sans DbUpdateException |
 | US10 | Expiration + purge | ExpiredFilesCleanupService | — | — | Blob purgé après expiration, ligne DB retirée après 30 j |
 | Sécurité | Hash mot de passe fichier | FilePasswordHasher | — | protected-download.spec.ts | BCrypt, Verify OK sur bon mdp, KO sinon |
 
@@ -106,10 +106,10 @@ Capture d'écran du rapport HTML : `docs/coverage-screenshot.png` (à ajouter ma
 | Catégorie | Nombre | Statut |
 |---|---|---|
 | Backend Unit | 59 | Tous verts |
-| Backend Integration (Testcontainers) | 19 | Tous verts |
+| Backend Integration (Testcontainers) | 20 | Tous verts |
 | Frontend Unit (Vitest) | 30 | Tous verts |
 | Frontend E2E (Playwright) | 3 | Tous verts |
-| **Total** | **111** | **100 % verts** |
+| **Total** | **112** | **100 % verts** |
 
 ## 5. Intégration continue
 

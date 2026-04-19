@@ -3,7 +3,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using DataShare.Application.DTOs;
+using DataShare.Infrastructure.Data;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DataShare.Tests.Integration;
 
@@ -150,5 +153,41 @@ public class FileEndpointsTests : IClassFixture<TestWebApplicationFactory>
         var response = await attackerClient.DeleteAsync($"/api/files/{dto!.Id}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task PostFiles_TwoConcurrentUploadsWithSameNewTag_BothSucceedAndTagIsUnique()
+    {
+        // Non-régression race condition dans FileUploadService.GetOrCreateTagAsync.
+        // Deux uploads concurrents du MÊME propriétaire avec le MÊME tag nouveau :
+        // le fix (_db.Tags.Remove(newTag) sur DbUpdateException) doit détacher
+        // le tag en conflit du ChangeTracker avant le SaveChanges final.
+        // Sans ce fix, l'un des deux SaveChangesAsync échoue avec une contrainte
+        // unique (OwnerId, Name) et renvoie 500.
+        var token = await RegisterAndGetTokenAsync(_factory.CreateClient());
+        // Nom de tag court (≤ 30 car. imposé par FileUploadService) mais unique par test
+        var tagName = $"race-{Guid.NewGuid().ToString("N").Substring(0, 16)}";
+
+        var client1 = _factory.CreateClient();
+        var client2 = _factory.CreateClient();
+        client1.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        client2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var upload1 = client1.PostAsync("/api/files", BuildUpload("race-a.txt", "A", tags: tagName));
+        var upload2 = client2.PostAsync("/api/files", BuildUpload("race-b.txt", "B", tags: tagName));
+
+        var responses = await Task.WhenAll(upload1, upload2);
+
+        responses.Should().OnlyContain(r => r.StatusCode == HttpStatusCode.Created);
+
+        var dto1 = await responses[0].Content.ReadFromJsonAsync<FileDto>();
+        var dto2 = await responses[1].Content.ReadFromJsonAsync<FileDto>();
+        dto1!.Tags.Should().ContainSingle(t => t == tagName);
+        dto2!.Tags.Should().ContainSingle(t => t == tagName);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var tagCount = await db.Tags.CountAsync(t => t.Name == tagName);
+        tagCount.Should().Be(1, "un seul tag doit être créé malgré les uploads concurrents");
     }
 }
