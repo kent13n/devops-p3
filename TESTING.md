@@ -97,7 +97,9 @@ DataShare.Application                          100  %
   Services.FileUploadService                   100  %
 ```
 
-Capture d'écran du rapport HTML : `docs/coverage-screenshot.png` (à ajouter manuellement — ouvrir `backend/coverage-html/index.html` dans un navigateur).
+Capture du rapport HTML (`backend/coverage-html/index.html` généré par ReportGenerator) :
+
+![Rapport de couverture backend](docs/backend-coverage-screenshot.png)
 
 **Note** : `DataShare.Infrastructure` n'est pas comptée dans ce pourcentage (filtre volontaire). Les services `ExpiredFilesCleanupService`, `LocalFileStorageService`, `FilePasswordHasher` et `TokenService` sont tout de même couverts par leurs propres tests unitaires.
 
