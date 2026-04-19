@@ -13,9 +13,36 @@ public static class FileEndpoints
 
         group.MapPost("/", Upload).AllowAnonymous().DisableAntiforgery()
              .RequireRateLimiting("upload");
+        group.MapGet("/", GetMyFiles).RequireAuthorization();
         group.MapDelete("/{id:guid}", Delete).RequireAuthorization();
 
         return app;
+    }
+
+    private static async Task<IResult> GetMyFiles(
+        [FromQuery] string? status,
+        ClaimsPrincipal claims,
+        HttpContext http,
+        FileListService listService,
+        CancellationToken ct)
+    {
+        var userId = claims.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? claims.FindFirstValue("sub");
+
+        if (userId is null || !Guid.TryParse(userId, out var uid))
+            return Results.Json(new ErrorResponse("UNAUTHORIZED", "Token invalide"), statusCode: 401);
+
+        if (!FileStatusFilterParser.TryParse(status, out var filter))
+        {
+            return Results.BadRequest(new ErrorResponse(
+                "INVALID_STATUS",
+                "Le paramètre status doit valoir 'all', 'active' ou 'expired'"));
+        }
+
+        var baseUrl = $"{http.Request.Scheme}://{http.Request.Host}";
+        var files = await listService.GetUserFilesAsync(uid, filter, baseUrl, ct);
+
+        return Results.Ok(files);
     }
 
     private static async Task<IResult> Upload(

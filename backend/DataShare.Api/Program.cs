@@ -113,6 +113,7 @@ try
     builder.Services.AddScoped<FileUploadService>();
     builder.Services.AddScoped<FileDownloadService>();
     builder.Services.AddScoped<FileDeleteService>();
+    builder.Services.AddScoped<FileListService>();
 
     // BackgroundService de purge
     builder.Services.AddHostedService<ExpiredFilesCleanupService>();
