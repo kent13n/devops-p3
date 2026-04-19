@@ -46,6 +46,7 @@ coverage/
 TestResults/
 *.coverage
 *.coveragexml
+backend/coverage-html/
 
 # Playwright
 playwright-report/

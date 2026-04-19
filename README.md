@@ -96,17 +96,23 @@ L'application Angular démarre sur `http://localhost:4200`.
 - [Modèle de données](docs/02-modele-donnees.md)
 - [Choix technologiques](docs/03-choix-technologiques.md)
 - [Contrat d'interface (OpenAPI)](docs/api/openapi.yaml)
+- [Plan de tests et couverture](TESTING.md)
+- [Analyse de sécurité](SECURITY.md)
+- [Performance et budget front](PERF.md)
 
 ## Tests
 
-```bash
-cd backend
-dotnet test
-```
+Voir [TESTING.md](TESTING.md) pour le plan complet. En résumé :
 
 ```bash
-cd frontend/datashare-web
-npx ng test
+# Backend (unit + intégration avec Testcontainers, Docker requis)
+dotnet test backend/DataShare.sln
+
+# Frontend unit (Vitest)
+cd frontend/datashare-web && npm test
+
+# Frontend E2E (Playwright, app démarrée via docker compose up)
+cd frontend/datashare-web && npm run e2e
 ```
 
 ## Licence
