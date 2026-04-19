@@ -3,16 +3,27 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatChipsModule, MatChipInputEvent } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+import { ENTER, COMMA, SPACE } from '@angular/cdk/keycodes';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { HttpEventType } from '@angular/common/http';
 import { FileService } from '../../core/api/file.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { FileDto } from '../../core/api/file.models';
+import { FileIconComponent } from '../../shared/file-icon/file-icon.component';
 
 @Component({
   selector: 'app-upload-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe, MatDialogModule],
+  imports: [
+    ReactiveFormsModule,
+    DatePipe,
+    MatDialogModule,
+    MatChipsModule,
+    MatIconModule,
+    FileIconComponent
+  ],
   templateUrl: './upload-dialog.component.html',
   styleUrl: './upload-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -31,17 +42,20 @@ export class UploadDialogComponent {
     '.ps1', '.psc1', '.dll', '.iso', '.svg'
   ]);
   private static readonly maxSizeBytes = 1_073_741_824;
+  private static readonly maxTagLength = 30;
+
+  readonly separatorKeysCodes = [ENTER, COMMA, SPACE];
 
   selectedFile = signal<File | null>(null);
   uploadProgress = signal<number>(0);
   loading = signal(false);
   errorMessage = signal('');
   uploadedFile = signal<FileDto | null>(null);
+  tags = signal<string[]>([]);
 
   form = this.fb.group({
     expiresInDays: [7],
-    password: [''],
-    tags: ['']
+    password: ['']
   });
 
   get isAuthenticated(): boolean {
@@ -72,13 +86,27 @@ export class UploadDialogComponent {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} Go`;
   }
 
+  addTag(event: MatChipInputEvent): void {
+    const value = (event.value || '').trim();
+    if (value && value.length <= UploadDialogComponent.maxTagLength) {
+      const current = this.tags();
+      if (!current.some(t => t.toLowerCase() === value.toLowerCase())) {
+        this.tags.set([...current, value]);
+      }
+    }
+    event.chipInput.clear();
+  }
+
+  removeTag(tag: string): void {
+    this.tags.set(this.tags().filter(t => t !== tag));
+  }
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
 
     const file = input.files[0];
 
-    // Validation client immédiate
     const lastDot = file.name.lastIndexOf('.');
     const ext = lastDot >= 0 ? file.name.substring(lastDot).toLowerCase() : '';
     if (ext && UploadDialogComponent.blockedExtensions.has(ext)) {
@@ -106,10 +134,7 @@ export class UploadDialogComponent {
     this.uploadProgress.set(0);
 
     const password = this.form.value.password || undefined;
-    const tagsStr = this.form.value.tags;
-    const tagArray = tagsStr
-      ? tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0)
-      : undefined;
+    const tagArray = this.tags().length > 0 ? this.tags() : undefined;
 
     this.fileService.uploadWithProgress(file, {
       expiresInDays: this.form.value.expiresInDays ?? 7,

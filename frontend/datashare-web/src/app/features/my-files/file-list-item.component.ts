@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FileHistoryItem } from '../../core/api/file.models';
+import { FileIconComponent } from '../../shared/file-icon/file-icon.component';
 
 @Component({
   selector: 'app-file-list-item',
   standalone: true,
-  imports: [],
+  imports: [FileIconComponent],
   templateUrl: './file-list-item.component.html',
   styleUrl: './file-list-item.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

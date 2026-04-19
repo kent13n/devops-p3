@@ -86,14 +86,10 @@
   gap: 1rem;
 }
 
-.file-icon-wrapper {
-  flex-shrink: 0;
-  color: #1e1e1e;
-}
-
 .file-icon {
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
 }
 
 .file-info {
@@ -155,6 +151,37 @@
 .btn-icon {
   width: 18px;
   height: 18px;
+}
+
+.tag-chip-grid {
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  min-height: 44px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: #BA681F;
+    box-shadow: 0 0 0 3px rgba(186, 104, 31, 0.15);
+  }
+
+  ::ng-deep .mat-mdc-chip.mat-mdc-standard-chip {
+    --mdc-chip-elevated-container-color: #FFF3E0;
+    --mdc-chip-label-text-color: #BA681F;
+    --mdc-chip-with-trailing-icon-trailing-icon-color: #BA681F;
+    border: 1px solid #FFAB91;
+  }
+
+  input {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.95rem !important;
+    font-family: inherit !important;
+
+    &::placeholder {
+      color: #bdbdbd;
+    }
+  }
 }
 
 .success-message {

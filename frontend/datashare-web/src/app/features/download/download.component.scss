@@ -39,14 +39,10 @@
   gap: 1rem;
 }
 
-.file-icon-wrapper {
-  flex-shrink: 0;
-  color: #1e1e1e;
-}
-
 .file-icon {
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
 }
 
 .file-info {
@@ -104,6 +100,25 @@
     height: 18px;
     flex-shrink: 0;
     color: #D32F2F;
+  }
+}
+
+.warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  background: #FFF3E0;
+  border: 1px solid rgba(215, 99, 11, 0.3);
+  border-radius: 8px;
+  color: #BA681F;
+  font-size: 0.9rem;
+
+  .info-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #BA681F;
   }
 }
 

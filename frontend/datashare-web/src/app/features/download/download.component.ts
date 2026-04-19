@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { HeaderComponent } from '../../shared/header/header.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
+import { FileIconComponent } from '../../shared/file-icon/file-icon.component';
 import { FileService } from '../../core/api/file.service';
 import { FileMetadataDto } from '../../core/api/file.models';
 
 @Component({
   selector: 'app-download',
   standalone: true,
-  imports: [FormsModule, DatePipe, HeaderComponent, FooterComponent],
+  imports: [FormsModule, DatePipe, HeaderComponent, FooterComponent, FileIconComponent],
   templateUrl: './download.component.html',
   styleUrl: './download.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -50,6 +51,16 @@ export class DownloadComponent implements OnInit {
     if (diffDays === 1) return 'Ce fichier expirera demain.';
     if (diffHours > 1) return `Ce fichier expirera dans ${diffHours} heures.`;
     return 'Ce fichier expire bientôt.';
+  }
+
+  /**
+   * true si le fichier expire dans moins de 24h → bannière warning au lieu d'info.
+   */
+  get isExpiringSoon(): boolean {
+    const meta = this.metadata();
+    if (!meta) return false;
+    const diffMs = new Date(meta.expiresAt).getTime() - Date.now();
+    return diffMs <= 24 * 60 * 60 * 1000;
   }
 
   ngOnInit(): void {

@@ -99,9 +99,11 @@ export class MyFilesComponent implements OnInit {
       panelClass: ['auth-dialog', 'upload-dialog']
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) this.loadFiles();
-    });
+    // Rechargement systématique après fermeture : l'utilisateur peut fermer
+    // via l'overlay/Escape après un upload réussi, sans que close() soit appelé
+    // avec la valeur. Reload inconditionnel simple et robuste (coût : 1 GET
+    // inutile si l'utilisateur annule sans uploader).
+    dialogRef.afterClosed().subscribe(() => this.loadFiles());
   }
 
   onLogout(): void {
