@@ -1,0 +1,24 @@
+@if (mobileOpen) {
+  <div class="sidebar-overlay" (click)="onClose()"></div>
+}
+
+<aside class="sidebar" [class.sidebar-mobile-open]="mobileOpen">
+  <div class="sidebar-header">
+    <button class="sidebar-close" type="button" (click)="onClose()" aria-label="Fermer le menu">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <h1 class="sidebar-logo">DataShare</h1>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a routerLink="/my-files" routerLinkActive="active" class="sidebar-item">
+      Mes fichiers
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <p>Copyright DataShare® 2025</p>
+  </div>
+</aside>

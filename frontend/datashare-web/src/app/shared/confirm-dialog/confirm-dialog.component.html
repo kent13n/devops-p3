@@ -1,0 +1,17 @@
+<div class="confirm-modal">
+  <h2 class="confirm-title">{{ data.title }}</h2>
+  <p class="confirm-message">{{ data.message }}</p>
+
+  <div class="confirm-actions">
+    <button type="button" class="btn-cancel" (click)="cancel()">
+      {{ data.cancelLabel ?? 'Annuler' }}
+    </button>
+    <button
+      type="button"
+      class="btn-confirm"
+      [class.btn-danger]="data.danger"
+      (click)="confirm()">
+      {{ data.confirmLabel ?? 'Confirmer' }}
+    </button>
+  </div>
+</div>

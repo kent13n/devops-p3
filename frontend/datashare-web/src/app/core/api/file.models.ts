@@ -27,3 +27,19 @@ export interface TagDto {
   id: string;
   name: string;
 }
+
+export interface FileHistoryItem {
+  id: string;
+  originalName: string;
+  sizeBytes: number;
+  mimeType: string;
+  downloadUrl: string | null;
+  expiresAt: string;
+  isExpired: boolean;
+  isPurged: boolean;
+  isProtected: boolean;
+  tags: string[];
+  createdAt: string;
+}
+
+export type FileStatus = 'all' | 'active' | 'expired';

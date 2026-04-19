@@ -1,10 +1,77 @@
-<div class="my-files-page">
-  <app-header />
+<div class="my-files-layout">
+  <app-my-files-sidebar
+    [mobileOpen]="sidebarOpen()"
+    (close)="closeSidebar()" />
 
-  <div class="my-files-content">
-    <div class="placeholder">
-      <h2>Mes fichiers</h2>
-      <p>L'historique de vos fichiers sera disponible ici.</p>
-    </div>
-  </div>
+  <main class="main-content">
+    <header class="topbar">
+      <button
+        type="button"
+        class="burger-btn"
+        (click)="openSidebar()"
+        aria-label="Ouvrir le menu">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <div class="topbar-user">
+        <span class="user-email">{{ authService.currentUser()?.email }}</span>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="btn-add" (click)="onUpload()">
+          Ajouter des fichiers
+        </button>
+        <button type="button" class="btn-logout" (click)="onLogout()">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H9M16 17L21 12M21 12L16 7M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Déconnexion
+        </button>
+      </div>
+    </header>
+
+    <section class="content">
+      <h1 class="page-title">Mes fichiers</h1>
+
+      <div class="tabs">
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'all'"
+          (click)="onTabChange('all')">
+          Tous
+        </button>
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'active'"
+          (click)="onTabChange('active')">
+          Actifs
+        </button>
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === 'expired'"
+          (click)="onTabChange('expired')">
+          Expiré
+        </button>
+      </div>
+
+      @if (loading()) {
+        <p class="state-message">Chargement...</p>
+      } @else if (files().length === 0) {
+        <p class="state-message">Aucun fichier à afficher.</p>
+      } @else {
+        <div class="file-list">
+          @for (file of files(); track file.id) {
+            <app-file-list-item
+              [file]="file"
+              (delete)="onDelete($event)" />
+          }
+        </div>
+      }
+    </section>
+  </main>
 </div>

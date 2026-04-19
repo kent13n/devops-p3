@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { FileDto, FileMetadataDto, TagDto } from './file.models';
+import { FileDto, FileHistoryItem, FileMetadataDto, FileStatus, TagDto } from './file.models';
 
 @Injectable({ providedIn: 'root' })
 export class FileService {
@@ -24,6 +24,10 @@ export class FileService {
       reportProgress: true
     });
     return this.http.request<FileDto>(req);
+  }
+
+  getMyFiles(status: FileStatus = 'all'): Observable<FileHistoryItem[]> {
+    return this.http.get<FileHistoryItem[]>(`/api/files?status=${status}`);
   }
 
   deleteFile(id: string): Observable<void> {

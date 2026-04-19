@@ -1,0 +1,181 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.my-files-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #FFF5EE;
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background: #FFF5EE;
+}
+
+.burger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #1e1e1e;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 0;
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.topbar-user {
+  display: none;
+  flex: 1;
+  justify-content: center;
+}
+
+.user-email {
+  font-weight: 500;
+  color: #1e1e1e;
+  font-size: 0.9rem;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.btn-add {
+  padding: 0.5rem 1rem;
+  background: #1e1e1e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #333;
+  }
+}
+
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: #BA681F;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.content {
+  flex: 1;
+  padding: 1rem 2rem 2rem;
+  max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e1e1e;
+  margin: 0 0 1rem;
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: white;
+  border-radius: 24px;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    color: #1e1e1e;
+  }
+
+  &.active {
+    background: linear-gradient(172.84deg, #FFB88C 2.29%, #DE6262 97.71%);
+    color: white;
+  }
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.state-message {
+  color: #999;
+  font-size: 0.95rem;
+  padding: 2rem 0;
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 899px) {
+  .burger-btn {
+    display: flex;
+  }
+
+  .topbar-user {
+    display: flex;
+  }
+
+  .topbar-actions {
+    display: none;
+  }
+
+  .topbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+}
