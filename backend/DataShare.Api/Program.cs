@@ -175,9 +175,10 @@ try
     app.UseCors();
     app.UseAuthentication();
     app.UseAuthorization();
-    // En environnement Testing, le rate limiter interfère avec les tests d'intégration
-    // qui enchaînent les uploads depuis la même IP locale.
-    if (!app.Environment.IsEnvironment("Testing"))
+    // Rate limiter désactivé en env Testing (tests d'intégration multi-uploads)
+    // et désactivable via RateLimit:Enabled=false pour les benchmarks k6.
+    var rateLimitEnabled = app.Configuration.GetValue("RateLimit:Enabled", true);
+    if (!app.Environment.IsEnvironment("Testing") && rateLimitEnabled)
     {
         app.UseRateLimiter();
     }

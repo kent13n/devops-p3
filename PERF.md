@@ -22,25 +22,33 @@ Seuils configurés :
 
 ### 2.2 Exécution
 
-Prérequis : l'app tourne via `docker compose up -d` et le réseau Docker nommé `datashare` est créé.
+Prérequis : l'app tourne via `docker compose up -d` et le réseau Docker nommé `datashare` est créé. Le rate limiter partitionné par IP (10 uploads/min) limite un test mono-IP — pour mesurer la capacité brute, désactiver via l'env var `RateLimit__Enabled=false` sur le service `api` (par exemple via un `docker-compose.override.yml` temporaire).
 
 ```bash
-docker run --rm -i --network datashare \
-  -v "$(pwd)/scripts/perf:/scripts" \
+# Sous Git Bash (Windows), désactiver la conversion MSYS sur les chemins :
+MSYS_NO_PATHCONV=1 docker run --rm -i --network datashare \
+  -v "/c/laragon/formation/projet-3/scripts/perf:/scripts" \
   grafana/k6 run /scripts/upload.js
 ```
 
-### 2.3 Résultats attendus
+### 2.3 Résultats mesurés — 2026-04-19
 
-Sur une machine de dev (Windows 11, 16 GB RAM, SSD NVMe) :
+Machine : Windows 11 Pro, 16 GB RAM, SSD NVMe. API .NET 10 + Postgres 16 en Docker local, rate limiter désactivé pour la mesure brute.
 
-| Métrique | Seuil | Observation attendue |
+| Métrique | Seuil k6 | Mesure |
 |---|---|---|
-| Requêtes totales | — | ~1800–2400 (1 min plateau × 10 VUs × ~3 req/s) |
-| p95 latence | < 2000 ms | Typiquement 150–400 ms pour uploads 100 KB |
-| Taux d'échec | < 1 % | 0 % hors limite de rate limiter (10/min/IP) |
+| Itérations totales | — | 1 796 uploads en 2 min (≈ 14.9 req/s) |
+| Requêtes HTTP | — | 1 796 |
+| Taux d'échec | < 1 % | **0.00 %** |
+| p50 latence | — | 7.22 ms |
+| p90 latence | — | 12.01 ms |
+| p95 latence | < 2 000 ms | **13.94 ms** |
+| Max latence | — | 556.71 ms (outlier ponctuel) |
+| Data envoyée | — | 185 MB |
 
-Note : le rate limiter partitionné par IP (10 uploads/min) limite artificiellement un test mono-IP. Pour mesurer la vraie capacité, désactiver temporairement le rate limiter ou spawner k6 depuis plusieurs IPs.
+Les deux seuils k6 sont satisfaits (✓). L'API traite un upload 100 KB en ~10 ms médian, largement sous la cible. Le max à ~550 ms correspond probablement au warmup JIT ou à un checkpoint Postgres.
+
+Avec le rate limiter actif (config par défaut production), les requêtes au-delà de la 10ème par minute et par IP reçoivent un 429 quasi-immédiat (< 1 ms). C'est le comportement attendu.
 
 ## 3. Lighthouse — Performance front
 
