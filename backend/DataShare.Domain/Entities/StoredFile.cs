@@ -12,6 +12,7 @@ public class StoredFile
     public string? PasswordHash { get; set; }
     public DateTime ExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsPurged { get; set; }
 
     public ICollection<FileTag> FileTags { get; set; } = [];
 }

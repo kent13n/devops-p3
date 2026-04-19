@@ -13,6 +13,7 @@ public class ExpiredFilesCleanupService : BackgroundService
     private readonly ILogger<ExpiredFilesCleanupService> _logger;
     private static readonly TimeSpan Interval = TimeSpan.FromHours(1);
     private const int BatchSize = 500;
+    private static readonly TimeSpan HardDeleteRetention = TimeSpan.FromDays(30);
 
     public ExpiredFilesCleanupService(
         IServiceScopeFactory scopeFactory,
@@ -28,7 +29,8 @@ public class ExpiredFilesCleanupService : BackgroundService
         {
             try
             {
-                await PurgeExpiredFilesAsync(stoppingToken);
+                await PurgeExpiredBlobsAsync(stoppingToken);
+                await HardDeleteOldPurgedFilesAsync(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -39,7 +41,11 @@ public class ExpiredFilesCleanupService : BackgroundService
         }
     }
 
-    private async Task PurgeExpiredFilesAsync(CancellationToken ct)
+    /// <summary>
+    /// Étape 1 : supprime le blob des fichiers expirés mais non encore purgés,
+    /// marque la ligne DB comme purgée pour la conserver dans l'historique.
+    /// </summary>
+    private async Task PurgeExpiredBlobsAsync(CancellationToken ct)
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -51,7 +57,7 @@ public class ExpiredFilesCleanupService : BackgroundService
         do
         {
             var expiredFiles = await db.StoredFiles
-                .Where(f => f.ExpiresAt < DateTime.UtcNow)
+                .Where(f => f.ExpiresAt < DateTime.UtcNow && !f.IsPurged)
                 .Take(BatchSize)
                 .ToListAsync(ct);
 
@@ -60,24 +66,23 @@ public class ExpiredFilesCleanupService : BackgroundService
             if (expiredFiles.Count == 0)
                 break;
 
-            _logger.LogInformation("Purge batch : {Count} fichier(s) expiré(s) détecté(s)", expiredFiles.Count);
-
             foreach (var file in expiredFiles)
             {
                 try
                 {
                     await storage.DeleteAsync(file.StoragePath, ct);
-                    db.StoredFiles.Remove(file);
+                    file.IsPurged = true;
+                    file.StoragePath = "";
                     totalPurged++;
 
                     _logger.LogInformation(
-                        "Fichier purgé : {FileId} ({OriginalName}), expiré depuis {Minutes} min",
+                        "Blob purgé : {FileId} ({OriginalName}), expiré depuis {Minutes} min",
                         file.Id, file.OriginalName, (int)(DateTime.UtcNow - file.ExpiresAt).TotalMinutes);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex,
-                        "Échec de la purge du fichier {FileId} ({OriginalName})",
+                        "Échec de la purge du blob {FileId} ({OriginalName})",
                         file.Id, file.OriginalName);
                 }
             }
@@ -86,6 +91,40 @@ public class ExpiredFilesCleanupService : BackgroundService
         } while (hasMore);
 
         if (totalPurged > 0)
-            _logger.LogInformation("Purge terminée : {Total} fichier(s) supprimé(s)", totalPurged);
+            _logger.LogInformation("Purge des blobs terminée : {Total} fichier(s) traités", totalPurged);
+    }
+
+    /// <summary>
+    /// Étape 2 : supprime définitivement les lignes DB des fichiers purgés depuis plus de 30 jours.
+    /// </summary>
+    private async Task HardDeleteOldPurgedFilesAsync(CancellationToken ct)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        var cutoff = DateTime.UtcNow - HardDeleteRetention;
+        var totalDeleted = 0;
+        bool hasMore;
+
+        do
+        {
+            var oldFiles = await db.StoredFiles
+                .Where(f => f.IsPurged && f.ExpiresAt < cutoff)
+                .Take(BatchSize)
+                .ToListAsync(ct);
+
+            hasMore = oldFiles.Count == BatchSize;
+
+            if (oldFiles.Count == 0)
+                break;
+
+            db.StoredFiles.RemoveRange(oldFiles);
+            totalDeleted += oldFiles.Count;
+
+            await db.SaveChangesAsync(ct);
+        } while (hasMore);
+
+        if (totalDeleted > 0)
+            _logger.LogInformation("Suppression définitive : {Total} fichier(s) retirés de l'historique (> 30j après expiration)", totalDeleted);
     }
 }

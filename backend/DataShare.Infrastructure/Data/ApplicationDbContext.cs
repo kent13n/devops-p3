@@ -35,6 +35,7 @@ public class ApplicationDbContext
             entity.HasIndex(e => e.DownloadToken).IsUnique();
             entity.HasIndex(e => e.OwnerId);
             entity.HasIndex(e => e.ExpiresAt);
+            entity.HasIndex(e => e.IsPurged);
 
             entity.HasOne<IdentityUser<Guid>>()
                   .WithMany()
