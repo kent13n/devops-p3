@@ -129,6 +129,8 @@ Un **gate automatique** fait échouer le build si la couverture passe sous **70 
 
 Les résultats sont visibles dans l'onglet **Actions** du repo GitHub.
 
+![Workflow CI vert](docs/ci-green.png)
+
 ## 6. Mocks et fakes utilisés
 
 ### 6.1 Backend
