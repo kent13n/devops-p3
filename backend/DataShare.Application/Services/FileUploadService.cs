@@ -142,23 +142,29 @@ public class FileUploadService
 
             if (attempt < MaxTagRetries)
             {
+                var newTag = new Tag
+                {
+                    Id = Guid.NewGuid(),
+                    OwnerId = ownerId,
+                    Name = tagName,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.Tags.Add(newTag);
+
                 try
                 {
-                    var newTag = new Tag
-                    {
-                        Id = Guid.NewGuid(),
-                        OwnerId = ownerId,
-                        Name = tagName,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    _db.Tags.Add(newTag);
                     await _db.SaveChangesAsync(ct);
                     return newTag;
                 }
                 catch (DbUpdateException)
                 {
-                    // Race condition : un autre upload concurrent a créé le tag
-                    // On détache l'entité en erreur et on retente le fetch
+                    // Race condition : un autre upload concurrent a créé le tag.
+                    // Remove() sur une entité en état Added la fait passer à
+                    // Detached, elle disparaît du ChangeTracker. Sans ça, le
+                    // SaveChanges() suivant dans UploadAsync réessaierait
+                    // d'insérer la même ligne et échouerait sur la contrainte
+                    // unique (OwnerId, Name).
+                    _db.Tags.Remove(newTag);
                 }
             }
         }

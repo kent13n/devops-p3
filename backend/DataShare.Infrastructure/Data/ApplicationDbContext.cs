@@ -35,7 +35,8 @@ public class ApplicationDbContext
             entity.HasIndex(e => e.DownloadToken).IsUnique();
             entity.HasIndex(e => e.OwnerId);
             entity.HasIndex(e => e.ExpiresAt);
-            entity.HasIndex(e => e.IsPurged);
+            // Index composite pour la requête de hard-delete (phase 2 purge)
+            entity.HasIndex(e => new { e.IsPurged, e.ExpiresAt });
 
             entity.HasOne<IdentityUser<Guid>>()
                   .WithMany()
