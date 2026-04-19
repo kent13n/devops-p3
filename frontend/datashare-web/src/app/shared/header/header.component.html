@@ -3,8 +3,7 @@
 
   <nav class="nav">
     @if (authService.isAuthenticated()) {
-      <a routerLink="/my-files" mat-button class="nav-link">Mon espace</a>
-      <button mat-stroked-button (click)="logout()" class="nav-link">Déconnexion</button>
+      <a routerLink="/my-files" mat-flat-button class="btn-login">Mon espace</a>
     } @else {
       <button mat-flat-button (click)="openLoginDialog()" class="btn-login">Se connecter</button>
     }

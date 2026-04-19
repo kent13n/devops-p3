@@ -45,3 +45,21 @@ body {
     --mdc-dialog-container-color: #ffffff;
   }
 }
+
+// Mobile : modale d'upload en bottom sheet
+@media (max-width: 600px) {
+  .cdk-overlay-pane.upload-dialog {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+
+    .mat-mdc-dialog-surface,
+    .mdc-dialog__surface {
+      border-radius: 16px 16px 0 0 !important;
+    }
+  }
+}

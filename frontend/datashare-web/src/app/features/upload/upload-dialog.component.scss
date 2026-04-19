@@ -1,0 +1,222 @@
+.upload-modal {
+  padding: 2.5rem;
+  background: white;
+}
+
+.upload-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e1e1e;
+  margin: 0 0 1.5rem;
+}
+
+.upload-form, .upload-success {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1e1e1e;
+  }
+
+  input, select {
+    padding: 0.75rem 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+    color: #1e1e1e;
+    font-family: inherit;
+    transition: border-color 0.2s;
+
+    &::placeholder {
+      color: #bdbdbd;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #BA681F;
+      box-shadow: 0 0 0 3px rgba(186, 104, 31, 0.15);
+    }
+  }
+
+  select {
+    cursor: pointer;
+  }
+}
+
+.btn-browse,
+.btn-change {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  border: 1px solid #BA681F;
+  border-radius: 8px;
+  color: #BA681F;
+  background: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #FFF3E0;
+  }
+}
+
+.btn-browse {
+  align-self: flex-end;
+  padding: 0.5rem 1.5rem;
+}
+
+.file-selected {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.file-icon-wrapper {
+  flex-shrink: 0;
+  color: #1e1e1e;
+}
+
+.file-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.file-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.file-name {
+  font-size: 1rem;
+  color: #1e1e1e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.file-size {
+  font-size: 0.85rem;
+  color: #999;
+  margin: 0;
+}
+
+.error-message {
+  color: #d32f2f;
+  text-align: center;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  align-self: center;
+  background: #FFF3E0;
+  color: #BA681F;
+  border: 1px solid #BA681F;
+  border-radius: 8px;
+  padding: 0.4rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #FFE0B2;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.success-message {
+  color: #1e1e1e;
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.success-protected {
+  text-align: center;
+  color: #BA681F;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.download-link-box {
+  background: #F5F5F5;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  overflow: hidden;
+
+  a {
+    color: #BA681F;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    word-break: break-all;
+  }
+}
+
+.progress-bar {
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #BA681F;
+  transition: width 0.2s;
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.btn-copy {
+  padding: 0.75rem 1.25rem;
+  background: #1e1e1e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #333;
+  }
+}
