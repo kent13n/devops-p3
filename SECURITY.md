@@ -42,27 +42,44 @@ La vulnérabilité `Moderate` concerne `hono` (< 4.12.14, CVE [GHSA-458j-xx4x-43
 
 Un fix est disponible (`npm audit fix`). Sera appliqué lors de la prochaine mise à jour de la chaîne de build.
 
-### 2.3 Trivy sur les images Docker
+### 2.3 Trivy sur les images Docker — 2026-04-19
 
-Commande à exécuter localement :
+Commande exécutée (Git Bash, Docker Desktop Windows) :
 
 ```bash
-docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL projet-3-api:latest
-docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL projet-3-web:latest
+MSYS_NO_PATHCONV=1 docker run --rm \
+  -v //var/run/docker.sock:/var/run/docker.sock \
+  aquasec/trivy image --no-progress <image>
 ```
 
-Les images de base utilisées sont :
-- `mcr.microsoft.com/dotnet/aspnet:10.0-alpine` (API)
-- `nginx:alpine` (frontend)
-- `postgres:16-alpine` (base)
+Résultats, toutes sévérités confondues :
 
-Ces images officielles sont régulièrement patchées. Un scan mensuel manuel est prévu avant chaque release majeure.
+| Image | OS / stack | CRITICAL | HIGH | MEDIUM | LOW |
+|---|---|---|---|---|---|
+| `projet-3-api:latest` | Ubuntu 24.04 + .NET 10 | 0 | 0 | 1 | 4 |
+| `projet-3-web:latest` | Alpine 3.23.4 + nginx | 0 | 0 | 0 | 0 |
+
+Détail de la seule vulnérabilité MEDIUM (API) :
+
+| CVE | Package | Version | Description |
+|---|---|---|---|
+| CVE-2025-45582 | `tar` | 1.35+dfsg-3build1 | Tar path traversal |
+
+Non exploitable dans notre contexte : le binaire `tar` de l'OS n'est invoqué ni par le runtime .NET ni par notre code. Elle est présente sur l'image de base Ubuntu mais reste en attente d'un patch upstream (pas encore de version corrigée disponible au moment du scan).
+
+Base images utilisées :
+- `mcr.microsoft.com/dotnet/aspnet:10.0` (API)
+- `nginx:alpine` (frontend)
+- `postgres:16-alpine` (base, non buildée par nous)
+
+Scan à ré-exécuter mensuellement avant chaque release majeure.
 
 ## 3. Décisions sur les vulnérabilités
 
 | Vulnérabilité | Décision | Justification |
 |---|---|---|
-| `hono` < 4.12.14 (moderate) | Acceptée temporairement | Transitive non utilisée, pas d'impact runtime. Correction au prochain upgrade de dépendances |
+| `hono` < 4.12.14 (moderate, npm) | Acceptée temporairement | Transitive non utilisée, pas d'impact runtime. Correction au prochain upgrade de dépendances |
+| CVE-2025-45582 (`tar`, medium, image API) | Acceptée temporairement | Binaire non invoqué par notre code, pas de patch upstream disponible |
 
 ## 4. Mesures de sécurité en place
 
