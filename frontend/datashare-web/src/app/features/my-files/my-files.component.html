@@ -3,14 +3,15 @@
     [mobileOpen]="sidebarOpen()"
     (close)="closeSidebar()" />
 
-  <main class="main-content">
+  <main id="main-content" class="main-content">
     <header class="topbar">
       <button
+        #burgerBtn
         type="button"
         class="burger-btn"
         (click)="openSidebar()"
         aria-label="Ouvrir le menu">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
           <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
@@ -24,7 +25,7 @@
           Ajouter des fichiers
         </button>
         <button type="button" class="btn-logout" (click)="onLogout()">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
             <path d="M9 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H9M16 17L21 12M21 12L16 7M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Déconnexion
@@ -35,11 +36,12 @@
     <section class="content">
       <h1 class="page-title">Mes fichiers</h1>
 
-      <div class="tabs">
+      <div class="tabs" role="group" aria-label="Filtrer les fichiers">
         <button
           type="button"
           class="tab"
           [class.active]="activeTab() === 'all'"
+          [attr.aria-pressed]="activeTab() === 'all'"
           (click)="onTabChange('all')">
           Tous
         </button>
@@ -47,6 +49,7 @@
           type="button"
           class="tab"
           [class.active]="activeTab() === 'active'"
+          [attr.aria-pressed]="activeTab() === 'active'"
           (click)="onTabChange('active')">
           Actifs
         </button>
@@ -54,6 +57,7 @@
           type="button"
           class="tab"
           [class.active]="activeTab() === 'expired'"
+          [attr.aria-pressed]="activeTab() === 'expired'"
           (click)="onTabChange('expired')">
           Expiré
         </button>

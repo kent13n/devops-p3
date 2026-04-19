@@ -1,7 +1,7 @@
 <div class="download-page">
   <app-header />
 
-  <div class="download-content">
+  <main id="main-content" class="download-content">
     @if (loading()) {
       <div class="download-card">
         <p class="loading-text">Chargement...</p>
@@ -9,8 +9,8 @@
     } @else if (errorType() && !metadata()) {
       <div class="download-card">
         <h2 class="download-title">Télécharger un fichier</h2>
-        <div class="error-banner">
-          <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div class="error-banner" role="alert">
+          <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
             <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -40,7 +40,7 @@
 
         @if (isExpiringSoon) {
           <div class="warning-banner">
-            <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
               <path d="M12 2L1 22H23L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>
               <path d="M12 10V14M12 18H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -48,7 +48,7 @@
           </div>
         } @else {
           <div class="info-banner">
-            <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="info-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
               <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -68,21 +68,21 @@
         }
 
         @if (errorMessage() && errorType() === 'password') {
-          <p class="error-message">{{ errorMessage() }}</p>
+          <p class="error-message" role="alert">{{ errorMessage() }}</p>
         }
 
         <button
           class="btn-download"
           (click)="download()"
           [disabled]="downloading() || (meta.isProtected && !password)">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
             <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15M7 10L12 15M12 15L17 10M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           {{ downloading() ? 'Téléchargement...' : 'Télécharger' }}
         </button>
       </div>
     }
-  </div>
+  </main>
 
   <app-footer />
 </div>

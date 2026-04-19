@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -43,7 +43,7 @@ export class MyFilesComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
-        this.snackBar.open('Erreur lors du chargement des fichiers', 'OK', { duration: 3000 });
+        this.snackBar.open('Erreur lors du chargement des fichiers', 'OK', { duration: 3000, politeness: 'assertive' });
       }
     });
   }
@@ -58,6 +58,7 @@ export class MyFilesComponent implements OnInit {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       panelClass: 'auth-dialog',
+      ariaLabelledBy: 'confirm-dialog-title',
       data: {
         title: 'Supprimer le fichier',
         message: 'Cette action est irréversible. Le fichier sera supprimé définitivement.',
@@ -87,7 +88,7 @@ export class MyFilesComponent implements OnInit {
           }
           // Rollback
           this.files.set(snapshot);
-          this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000 });
+          this.snackBar.open('Erreur lors de la suppression', 'OK', { duration: 3000, politeness: 'assertive' });
         }
       });
     });
@@ -96,7 +97,8 @@ export class MyFilesComponent implements OnInit {
   onUpload(): void {
     const dialogRef = this.dialog.open(UploadDialogComponent, {
       width: '480px',
-      panelClass: ['auth-dialog', 'upload-dialog']
+      panelClass: ['auth-dialog', 'upload-dialog'],
+      ariaLabelledBy: 'upload-dialog-title'
     });
 
     // Rechargement systématique après fermeture : l'utilisateur peut fermer
@@ -111,11 +113,15 @@ export class MyFilesComponent implements OnInit {
     this.router.navigate(['/']);
   }
 
+  @ViewChild('burgerBtn') burgerBtn?: ElementRef<HTMLButtonElement>;
+
   openSidebar(): void {
     this.sidebarOpen.set(true);
   }
 
   closeSidebar(): void {
     this.sidebarOpen.set(false);
+    // Retour du focus sur le bouton burger après fermeture du drawer
+    setTimeout(() => this.burgerBtn?.nativeElement.focus(), 0);
   }
 }

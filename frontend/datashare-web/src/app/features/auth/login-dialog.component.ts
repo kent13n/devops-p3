@@ -55,7 +55,8 @@ export class LoginDialogComponent {
     this.dialogRef.close();
     this.dialog.open(RegisterDialogComponent, {
       width: '480px',
-      panelClass: 'auth-dialog'
+      panelClass: 'auth-dialog',
+      ariaLabelledBy: 'register-dialog-title'
     });
   }
 }

@@ -1,6 +1,6 @@
 <div class="upload-modal">
   @if (!uploadedFile()) {
-    <h2 class="upload-title">Ajouter un fichier</h2>
+    <h2 class="upload-title" id="upload-dialog-title">Ajouter un fichier</h2>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="upload-form">
       <input type="file" id="file-input" (change)="onFileSelected($event)" hidden>
@@ -63,11 +63,17 @@
       }
 
       @if (errorMessage()) {
-        <p class="error-message">{{ errorMessage() }}</p>
+        <p class="error-message" role="alert">{{ errorMessage() }}</p>
       }
 
       @if (loading() && uploadProgress() > 0) {
-        <div class="progress-bar">
+        <div
+          class="progress-bar"
+          role="progressbar"
+          [attr.aria-valuenow]="uploadProgress()"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Progression du téléversement">
           <div class="progress-fill" [style.width.%]="uploadProgress()"></div>
         </div>
         <p class="progress-text">{{ uploadProgress() }}%</p>
@@ -77,14 +83,14 @@
         type="submit"
         class="btn-submit"
         [disabled]="loading() || !selectedFile()">
-        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
           <path d="M16 16L12 12L8 16M12 12V21M20.39 18.39A5 5 0 0018 9H16.74A8 8 0 103 16.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         {{ loading() ? 'Téléversement...' : 'Téléverser' }}
       </button>
     </form>
   } @else {
-    <h2 class="upload-title">Ajouter un fichier</h2>
+    <h2 class="upload-title" id="upload-dialog-title">Ajouter un fichier</h2>
 
     <div class="upload-success">
       <div class="file-selected">
@@ -111,7 +117,7 @@
       }
 
       <button type="button" class="btn-submit" (click)="copyLink()">
-        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
           <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
           <path d="M5 15H4C2.9 15 2 14.1 2 13V4C2 2.9 2.9 2 4 2H13C14.1 2 15 2.9 15 4V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>

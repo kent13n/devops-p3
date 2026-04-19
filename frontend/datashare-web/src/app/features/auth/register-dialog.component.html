@@ -1,5 +1,5 @@
 <div class="auth-modal">
-  <h2 class="auth-title">Créer un compte</h2>
+  <h2 class="auth-title" id="register-dialog-title">Créer un compte</h2>
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
     <div class="field">
@@ -45,7 +45,7 @@
     </div>
 
     @if (errorMessage) {
-      <p class="error-message">{{ errorMessage }}</p>
+      <p class="error-message" role="alert">{{ errorMessage }}</p>
     }
 
     <button type="button" class="link-switch" (click)="switchToLogin()">

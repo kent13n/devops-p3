@@ -19,7 +19,8 @@ export class HeaderComponent {
   openLoginDialog(): void {
     this.dialog.open(LoginDialogComponent, {
       width: '480px',
-      panelClass: 'auth-dialog'
+      panelClass: 'auth-dialog',
+      ariaLabelledBy: 'login-dialog-title'
     });
   }
 }

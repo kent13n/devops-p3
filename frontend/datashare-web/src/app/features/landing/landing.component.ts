@@ -17,7 +17,8 @@ export class LandingComponent {
   onUploadClick(): void {
     this.dialog.open(UploadDialogComponent, {
       width: '480px',
-      panelClass: ['auth-dialog', 'upload-dialog']
+      panelClass: ['auth-dialog', 'upload-dialog'],
+      ariaLabelledBy: 'upload-dialog-title'
     });
   }
 }
