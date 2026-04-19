@@ -60,9 +60,14 @@ Avec le rate limiter actif (config par défaut production), les requêtes au-del
 
 ### 3.1 Méthode
 
-Audit desktop headless sur la landing page via `npx lighthouse http://localhost`.
+Audit **mobile** (form factor le plus stringent, représentatif de l'usage utilisateur réel) sur la landing page via :
+```bash
+npx lighthouse http://localhost --form-factor=mobile
+```
 
 ### 3.2 Résultats — 2026-04-19 (après optimisations)
+
+![Audit Lighthouse mobile](docs/lighthouse-mobile.png)
 
 | Catégorie | Score |
 |---|---|
@@ -71,13 +76,13 @@ Audit desktop headless sur la landing page via `npx lighthouse http://localhost`
 | Bonnes pratiques | 100 |
 | SEO | 100 |
 
-### 3.3 Core Web Vitals
+### 3.3 Core Web Vitals (mobile)
 
 | Métrique | Valeur | Cible | Statut |
 |---|---|---|---|
 | First Contentful Paint (FCP) | 1.7 s | < 1.8 s | OK |
 | Largest Contentful Paint (LCP) | 2.1 s | < 2.5 s | OK |
-| Total Blocking Time (TBT) | 50 ms | < 200 ms | Excellent |
+| Total Blocking Time (TBT) | 40 ms | < 200 ms | Excellent |
 | Cumulative Layout Shift (CLS) | 0.002 | < 0.1 | Excellent |
 | Speed Index | 1.7 s | < 3.4 s | Excellent |
 | Total bytes transférés | 216 KB | < 1 MB | Excellent |
