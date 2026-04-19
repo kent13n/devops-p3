@@ -54,6 +54,8 @@ Machine : Windows 11 Pro, 16 GB RAM, SSD NVMe. API .NET 10 + Postgres 16 en Dock
 
 Les deux seuils k6 sont satisfaits (✓). L'API traite un upload 100 KB en ~10 ms médian, largement sous la cible. Le max à ~550 ms correspond probablement au warmup JIT ou à un checkpoint Postgres.
 
+![Résumé k6](docs/k6-results.png)
+
 Avec le rate limiter actif (config par défaut production), les requêtes au-delà de la 10ème par minute et par IP reçoivent un 429 quasi-immédiat (< 1 ms). C'est le comportement attendu.
 
 ## 3. Lighthouse — Performance front
