@@ -45,7 +45,7 @@ public class ExpiredFilesCleanupService : BackgroundService
     /// Étape 1 : supprime le blob des fichiers expirés mais non encore purgés,
     /// marque la ligne DB comme purgée pour la conserver dans l'historique.
     /// </summary>
-    private async Task PurgeExpiredBlobsAsync(CancellationToken ct)
+    internal async Task PurgeExpiredBlobsAsync(CancellationToken ct)
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -97,7 +97,7 @@ public class ExpiredFilesCleanupService : BackgroundService
     /// <summary>
     /// Étape 2 : supprime définitivement les lignes DB des fichiers purgés depuis plus de 30 jours.
     /// </summary>
-    private async Task HardDeleteOldPurgedFilesAsync(CancellationToken ct)
+    internal async Task HardDeleteOldPurgedFilesAsync(CancellationToken ct)
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
