@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test --no-watch",
+    "test:coverage": "ng test --no-watch --coverage --coverage-reporters text --coverage-reporters lcov --coverage-reporters html"
   },
   "private": true,
   "packageManager": "npm@10.9.4",
@@ -30,6 +31,7 @@
     "@angular/build": "^21.2.7",
     "@angular/cli": "^21.2.7",
     "@angular/compiler-cli": "^21.2.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
