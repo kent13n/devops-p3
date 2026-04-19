@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using DataShare.Application.DTOs;
 using DataShare.Infrastructure.Data;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -108,6 +108,40 @@ public class FileEndpointsTests : IClassFixture<TestWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var files = await response.Content.ReadFromJsonAsync<FileDto[]>();
         files!.Length.Should().BeGreaterThanOrEqualTo(2);
+    }
+
+    [Fact]
+    public async Task GetFiles_StatusFilters_ReturnOnlyMatchingFiles()
+    {
+        var client = _factory.CreateClient();
+        var token = await RegisterAndGetTokenAsync(client);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Upload deux fichiers actifs
+        var upActive1 = await client.PostAsync("/api/files", BuildUpload("active-1.txt", "A"));
+        var dtoActive1 = await upActive1.Content.ReadFromJsonAsync<FileDto>();
+        var upActive2 = await client.PostAsync("/api/files", BuildUpload("active-2.txt", "B"));
+        var dtoActive2 = await upActive2.Content.ReadFromJsonAsync<FileDto>();
+
+        // On force un des deux fichiers en état "expiré" en rétropendant ExpiresAt en DB
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var expired = await db.StoredFiles.SingleAsync(f => f.Id == dtoActive2!.Id);
+            expired.ExpiresAt = DateTime.UtcNow.AddDays(-1);
+            await db.SaveChangesAsync();
+        }
+
+        // status=active : ne retourne que le fichier encore valide
+        var activeResp = await client.GetAsync("/api/files?status=active");
+        activeResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var activeFiles = await activeResp.Content.ReadFromJsonAsync<FileDto[]>();
+        activeFiles!.Select(f => f.Id).Should().Contain(dtoActive1!.Id).And.NotContain(dtoActive2!.Id);
+
+        // status=expired : ne retourne que le fichier rétro-expiré
+        var expiredResp = await client.GetAsync("/api/files?status=expired");
+        var expiredFiles = await expiredResp.Content.ReadFromJsonAsync<FileDto[]>();
+        expiredFiles!.Select(f => f.Id).Should().Contain(dtoActive2.Id).And.NotContain(dtoActive1.Id);
     }
 
     [Fact]

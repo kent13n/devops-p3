@@ -175,7 +175,12 @@ try
     app.UseCors();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseRateLimiter();
+    // En environnement Testing, le rate limiter interfère avec les tests d'intégration
+    // qui enchaînent les uploads depuis la même IP locale.
+    if (!app.Environment.IsEnvironment("Testing"))
+    {
+        app.UseRateLimiter();
+    }
 
     // Endpoints
     app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }))

@@ -1,7 +1,7 @@
 using DataShare.Application.Interfaces;
 using DataShare.Application.Services;
 using DataShare.Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using MockQueryable.NSubstitute;
 using NSubstitute;
 using Xunit;
@@ -122,5 +122,24 @@ public class FileListServiceTests
         var result = await service.GetUserFilesAsync(_userId, FileStatusFilter.All, "http://host/");
 
         result[0].DownloadUrl.Should().Be($"http://host/d/{file.DownloadToken}");
+    }
+
+    [Fact]
+    public async Task GetUserFilesAsync_OrdersByCreatedAtDescending()
+    {
+        var now = DateTime.UtcNow;
+        var oldest = CreateFile(_userId);
+        oldest.CreatedAt = now.AddDays(-3);
+        var middle = CreateFile(_userId);
+        middle.CreatedAt = now.AddDays(-1);
+        var newest = CreateFile(_userId);
+        newest.CreatedAt = now;
+
+        // Ordre d'insertion volontairement mélangé pour s'assurer que le tri vient du service
+        var (service, _) = BuildService(new[] { middle, newest, oldest });
+
+        var result = await service.GetUserFilesAsync(_userId, FileStatusFilter.All, "http://host");
+
+        result.Select(r => r.Id).Should().ContainInOrder(newest.Id, middle.Id, oldest.Id);
     }
 }

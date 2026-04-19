@@ -2,8 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using AwesomeAssertions;
 using DataShare.Application.DTOs;
-using FluentAssertions;
+using DataShare.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DataShare.Tests.Integration;
 
@@ -82,6 +85,49 @@ public class DownloadEndpointsTests : IClassFixture<TestWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Be("secret-content");
+    }
+
+    [Fact]
+    public async Task GetMetadata_ExpiredFile_ReturnsGone()
+    {
+        var client = _factory.CreateClient();
+        var upload = await client.PostAsync("/api/files", BuildUpload("expiring.txt", "data"));
+        var dto = await upload.Content.ReadFromJsonAsync<FileDto>();
+
+        // Rétro-expiration en DB pour exercer le chemin FILE_EXPIRED (410)
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var stored = await db.StoredFiles.SingleAsync(f => f.Id == dto!.Id);
+            stored.ExpiresAt = DateTime.UtcNow.AddMinutes(-5);
+            await db.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync($"/api/download/{dto!.DownloadToken}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Gone);
+    }
+
+    [Fact]
+    public async Task Download_ExpiredFile_ReturnsGone()
+    {
+        var client = _factory.CreateClient();
+        var upload = await client.PostAsync("/api/files", BuildUpload("expiring-dl.txt", "data"));
+        var dto = await upload.Content.ReadFromJsonAsync<FileDto>();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var stored = await db.StoredFiles.SingleAsync(f => f.Id == dto!.Id);
+            stored.ExpiresAt = DateTime.UtcNow.AddMinutes(-5);
+            await db.SaveChangesAsync();
+        }
+
+        var response = await client.PostAsJsonAsync(
+            $"/api/download/{dto!.DownloadToken}",
+            new DownloadRequest(null));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Gone);
     }
 
     [Fact]
