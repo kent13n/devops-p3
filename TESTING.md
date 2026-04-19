@@ -8,7 +8,7 @@ Pyramide classique : beaucoup de tests unitaires rapides, moins de tests d'inté
 
 | Niveau | Responsabilité | Outils | Exécution |
 |---|---|---|---|
-| Unit (backend) | Logique métier des services, parser, hashing | xUnit + FluentAssertions + NSubstitute + MockQueryable | `dotnet test` |
+| Unit (backend) | Logique métier des services, parser, hashing | xUnit + AwesomeAssertions + NSubstitute + MockQueryable | `dotnet test` |
 | Integration (backend) | Endpoints complets avec DB Postgres réelle | xUnit + WebApplicationFactory + Testcontainers.PostgreSql | `dotnet test` (Docker requis) |
 | Unit (frontend) | Services, guards, interceptors, composants purs | Vitest + jsdom + Angular TestBed | `npm test` |
 | E2E (frontend) | Parcours utilisateur complets dans un vrai navigateur | Playwright + Chromium | `npm run e2e` (app doit tourner) |
@@ -105,11 +105,11 @@ Capture d'écran du rapport HTML : `docs/coverage-screenshot.png` (à ajouter ma
 
 | Catégorie | Nombre | Statut |
 |---|---|---|
-| Backend Unit | 59 | Tous verts |
-| Backend Integration (Testcontainers) | 20 | Tous verts |
+| Backend Unit | 60 | Tous verts |
+| Backend Integration (Testcontainers) | 23 | Tous verts |
 | Frontend Unit (Vitest) | 30 | Tous verts |
 | Frontend E2E (Playwright) | 3 | Tous verts |
-| **Total** | **112** | **100 % verts** |
+| **Total** | **116** | **100 % verts** |
 
 ## 5. Intégration continue
 
@@ -122,6 +122,8 @@ Workflow GitHub Actions `.github/workflows/ci.yml` déclenché sur `push` et `pu
 | security | dotnet list --vulnerable + npm audit --audit-level=high |
 
 Les tests d'intégration démarrent leur propre container Postgres via Testcontainers — aucun `services: postgres` n'est configuré dans le workflow.
+
+Un **gate automatique** fait échouer le build si la couverture passe sous **70 %** (évaluée sur `Summary.txt` généré par `reportgenerator` après les tests).
 
 Les résultats sont visibles dans l'onglet **Actions** du repo GitHub.
 

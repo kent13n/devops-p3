@@ -21,11 +21,24 @@ jobs:
         run: dotnet build backend/DataShare.sln --no-restore --configuration Release
       - name: Test avec couverture
         run: dotnet test backend/DataShare.sln --no-build --configuration Release --collect:"XPlat Code Coverage" --settings backend/coverlet.runsettings
+      - name: Installer ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+      - name: Générer le rapport de couverture
+        run: reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:coverage-report -reporttypes:"Cobertura;TextSummary"
+      - name: Vérifier seuil de couverture ≥ 70%
+        shell: bash
+        run: |
+          line=$(grep -oP 'Line coverage:\s*\K[0-9]+(\.[0-9]+)?' coverage-report/Summary.txt)
+          echo "Couverture lignes : $line%"
+          awk -v cov="$line" 'BEGIN { if (cov+0 < 70) { print "FAIL : couverture < 70%"; exit 1 } else { print "OK : couverture ≥ 70%" } }'
       - name: Upload coverage artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
-          path: '**/coverage.cobertura.xml'
+          path: |
+            **/coverage.cobertura.xml
+            coverage-report/
 
   frontend:
     name: Frontend (Angular 21)
