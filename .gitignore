@@ -52,6 +52,11 @@ backend/coverage-html/
 playwright-report/
 test-results/
 
+# Exports générés du slide deck Marp (régénérables)
+docs/soutenance/slides.pdf
+docs/soutenance/slides.pptx
+docs/soutenance/slides.html
+
 # Logs
 logs/
 *.log
