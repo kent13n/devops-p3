@@ -69,6 +69,7 @@ Audit desktop headless sur la landing page via `npx lighthouse http://localhost`
 | Performance | 98 |
 | Accessibilité | 100 |
 | Bonnes pratiques | 100 |
+| SEO | 100 |
 
 ### 3.3 Core Web Vitals
 

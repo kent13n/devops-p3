@@ -5,8 +5,21 @@ import { DownloadComponent } from './features/download/download.component';
 import { authGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
-  { path: '', component: LandingComponent },
-  { path: 'my-files', component: MyFilesComponent, canActivate: [authGuard] },
-  { path: 'd/:token', component: DownloadComponent },
+  {
+    path: '',
+    component: LandingComponent,
+    title: 'DataShare — Partage de fichiers sécurisé'
+  },
+  {
+    path: 'my-files',
+    component: MyFilesComponent,
+    canActivate: [authGuard],
+    title: 'Mes fichiers — DataShare'
+  },
+  {
+    path: 'd/:token',
+    component: DownloadComponent,
+    title: 'Télécharger un fichier — DataShare'
+  },
   { path: '**', redirectTo: '' }
 ];
