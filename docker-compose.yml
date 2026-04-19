@@ -16,6 +16,7 @@ services:
       - Jwt__ExpirationInHours=24
       - FileStorage__BasePath=/var/datashare/files
       - ASPNETCORE_ENVIRONMENT=Development
+      - DATASHARE_AUTO_MIGRATE=true
     volumes:
       - files-data:/var/datashare/files
     depends_on:
