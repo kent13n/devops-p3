@@ -1,7 +1,7 @@
 using DataShare.Application.Interfaces;
 using DataShare.Application.Services;
 using DataShare.Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using MockQueryable.NSubstitute;
 using NSubstitute;
 using Xunit;

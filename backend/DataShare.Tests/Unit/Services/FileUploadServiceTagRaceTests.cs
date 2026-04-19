@@ -2,7 +2,7 @@ using System.Text;
 using DataShare.Application.Interfaces;
 using DataShare.Application.Services;
 using DataShare.Domain.Entities;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using MockQueryable.NSubstitute;
 using NSubstitute;

@@ -1,6 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using DataShare.Infrastructure.Services;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 

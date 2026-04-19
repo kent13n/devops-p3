@@ -2,7 +2,7 @@ using DataShare.Application.Interfaces;
 using DataShare.Domain.Entities;
 using DataShare.Infrastructure.Data;
 using DataShare.Infrastructure.Services;
-using FluentAssertions;
+using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using DataShare.Application.DTOs;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace DataShare.Tests.Integration;
 

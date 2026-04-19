@@ -1,5 +1,5 @@
 using DataShare.Infrastructure.Services;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace DataShare.Tests.Unit.Services;
