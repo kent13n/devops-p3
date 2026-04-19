@@ -175,10 +175,10 @@ try
     app.UseCors();
     app.UseAuthentication();
     app.UseAuthorization();
-    // Rate limiter désactivé en env Testing (tests d'intégration multi-uploads)
-    // et désactivable via RateLimit:Enabled=false pour les benchmarks k6.
-    var rateLimitEnabled = app.Configuration.GetValue("RateLimit:Enabled", true);
-    if (!app.Environment.IsEnvironment("Testing") && rateLimitEnabled)
+    // Rate limiter désactivé en env Testing, pour deux cas :
+    // - tests d'intégration xUnit (WebApplicationFactory utilise Testing)
+    // - benchmarks k6 (lancer l'API avec ASPNETCORE_ENVIRONMENT=Testing)
+    if (!app.Environment.IsEnvironment("Testing"))
     {
         app.UseRateLimiter();
     }
