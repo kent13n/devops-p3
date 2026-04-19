@@ -48,11 +48,11 @@ Note : le rate limiter partitionné par IP (10 uploads/min) limite artificiellem
 
 Audit desktop headless sur la landing page via `npx lighthouse http://localhost`.
 
-### 3.2 Résultats — 2026-04-19
+### 3.2 Résultats — 2026-04-19 (après optimisations)
 
 | Catégorie | Score |
 |---|---|
-| Performance | 77 |
+| Performance | 98 |
 | Accessibilité | 100 |
 | Bonnes pratiques | 100 |
 
@@ -60,22 +60,21 @@ Audit desktop headless sur la landing page via `npx lighthouse http://localhost`
 
 | Métrique | Valeur | Cible | Statut |
 |---|---|---|---|
-| First Contentful Paint (FCP) | 3.9 s | < 1.8 s | À améliorer |
-| Largest Contentful Paint (LCP) | 4.2 s | < 2.5 s | À améliorer |
-| Total Blocking Time (TBT) | 30 ms | < 200 ms | OK |
+| First Contentful Paint (FCP) | 1.7 s | < 1.8 s | OK |
+| Largest Contentful Paint (LCP) | 2.1 s | < 2.5 s | OK |
+| Total Blocking Time (TBT) | 50 ms | < 200 ms | Excellent |
 | Cumulative Layout Shift (CLS) | 0.002 | < 0.1 | Excellent |
-| Speed Index | 3.9 s | < 3.4 s | À améliorer |
-| Total bytes transférés | 681 KB | < 1 MB | OK |
+| Speed Index | 1.7 s | < 3.4 s | Excellent |
+| Total bytes transférés | 216 KB | < 1 MB | Excellent |
 
-### 3.4 Analyse
+### 3.4 Optimisations appliquées
 
-Le score Performance est en dessous de la cible 80 à cause du FCP/LCP élevés (~4 s). Le goulot est probablement :
+Score passé de **77** à **98** (+21 points) grâce à deux ajustements ciblés :
 
-- **Fonts self-hosted non preloaded** — DM Sans chargée sans `<link rel="preload">`
-- **Bundle Angular principal** — 463 KB raw (~130 KB gzippé), chargé synchrone
-- **Absence de compression gzip côté nginx** (à vérifier dans `nginx.conf`)
+1. **Compression gzip nginx** (`frontend/nginx.conf`) : `gzip on` sur `application/javascript`, `text/css`, `image/svg+xml`, `font/woff2`, etc. avec `gzip_comp_level 6`. Réduction des bytes transférés : **681 KB → 216 KB** (−68 %).
+2. **Chargement non-bloquant des fonts Google** (`src/index.html`) : `rel="preload" as="style"` puis swap vers `rel="stylesheet"` via `onload`, avec fallback `<noscript>`. Le rendu du HTML ne bloque plus en attendant le CSS des fonts. Gain FCP : −2.2 s.
 
-TBT (30 ms) et CLS (0.002) sont excellents : aucun décalage visuel, aucun blocage JS significatif.
+Le Total Blocking Time reste très faible (50 ms) : aucun JS bloquant significatif, Angular hydratation rapide.
 
 ## 4. Budget frontend
 
@@ -85,7 +84,7 @@ TBT (30 ms) et CLS (0.002) sont excellents : aucun décalage visuel, aucun bloca
 | Bundle JS initial (gzipped) | < 150 KB | ~130 KB (estimé) | OK |
 | CSS (raw) | < 50 KB | 13 KB | OK |
 | Taille de page transférée | < 1 MB | 681 KB | OK |
-| LCP | < 2.5 s | 4.2 s | **À améliorer** |
+| LCP | < 2.5 s | 2.1 s | OK |
 
 Les budgets Angular sont déjà configurés dans `angular.json` (500 KB warning, 1 MB error sur `initial`).
 
@@ -125,12 +124,8 @@ Requêtes Loki type :
 
 ## 6. Optimisations possibles post-MVP
 
-Par ordre d'impact estimé :
-
-1. **Compression gzip/Brotli dans nginx** (`gzip on; gzip_types …`) — gain attendu LCP −30 %
-2. **Preload des fonts self-hosted** (`<link rel="preload" as="font" crossorigin>`) — gain FCP −500 ms
-3. **HTTP/2** sur le reverse-proxy (nginx `http2;`) — parallélisation des assets
-4. **Lazy loading des routes** secondaires (`/my-files`, `/d/:token`) — réduction du main bundle
-5. **CDN pour les assets statiques** (js, css, svg, fonts) — latence perçue
-6. **Streaming des uploads/downloads** côté serveur — baisse de la consommation mémoire API, utile pour les fichiers > 100 MB
-7. **Cache HTTP (Cache-Control)** sur les chunks Angular avec `ng build --output-hashing=all` — évite le re-download lors des revisites
+1. **Brotli** en plus de gzip sur nginx — gain marginal supplémentaire de −10 % sur les assets textuels
+2. **HTTP/2** sur le reverse-proxy (nginx `http2;`) — parallélisation des assets
+3. **Lazy loading des routes** secondaires (`/my-files`, `/d/:token`) — réduction du main bundle
+4. **CDN pour les assets statiques** (js, css, svg, fonts) — latence perçue
+5. **Streaming des uploads/downloads** côté serveur — baisse de la consommation mémoire API, utile pour les fichiers > 100 MB
