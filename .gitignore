@@ -47,6 +47,10 @@ TestResults/
 *.coverage
 *.coveragexml
 
+# Playwright
+playwright-report/
+test-results/
+
 # Logs
 logs/
 *.log

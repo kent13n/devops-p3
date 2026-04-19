@@ -1,0 +1,1 @@
+Hello DataShare — fichier de test pour Playwright.
