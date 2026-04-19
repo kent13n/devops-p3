@@ -22,7 +22,13 @@ Seuils configurés :
 
 ### 2.2 Exécution
 
-Prérequis : l'app tourne via `docker compose up -d` et le réseau Docker nommé `datashare` est créé. Le rate limiter partitionné par IP (10 uploads/min) limite un test mono-IP — pour mesurer la capacité brute, relancer le service `api` avec `ASPNETCORE_ENVIRONMENT=Testing` (le rate limiter est automatiquement désactivé dans cet environnement, comme pour les tests d'intégration). Un `docker-compose.override.yml` local permet d'isoler cette config sans toucher au compose versionné.
+Prérequis : l'app tourne via `docker compose up -d` et le réseau Docker nommé `datashare` est créé. Le rate limiter partitionné par IP (10 uploads/min) limite un test mono-IP — pour mesurer la capacité brute, relancer le service `api` avec `ASPNETCORE_ENVIRONMENT=Testing` : le compose utilise l'interpolation `${ASPNETCORE_ENVIRONMENT:-Development}`, donc il suffit d'exporter la variable dans le shell :
+
+```bash
+ASPNETCORE_ENVIRONMENT=Testing docker compose up -d --force-recreate api
+# ... run k6 ...
+docker compose up -d --force-recreate api   # retour à Development
+```
 
 ```bash
 # Sous Git Bash (Windows), désactiver la conversion MSYS sur les chemins :
