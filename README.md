@@ -1,6 +1,18 @@
 # DataShare
 
+[![CI](https://github.com/kent13n/devops-p3/actions/workflows/ci.yml/badge.svg)](https://github.com/kent13n/devops-p3/actions/workflows/ci.yml)
+
 Plateforme de transfert sécurisé de fichiers destinée aux freelances et petites entreprises. Les utilisateurs peuvent téléverser des fichiers, obtenir un lien de téléchargement temporaire et le partager avec des destinataires, avec la possibilité de protéger l'accès par mot de passe.
+
+## État du projet
+
+| Métrique | Valeur |
+|---|---|
+| Tests | 116 verts (60 unit + 23 intégration + 30 Vitest + 3 Playwright) |
+| Couverture backend (Application + Api) | 94 % lignes |
+| Lighthouse mobile | Perf 98 / A11y 100 / BP 100 / SEO 100 |
+| k6 (10 VUs, 2 min) | p95 14 ms, 0 échec |
+| Scans sécurité | 0 vulnérabilité HIGH/CRITICAL (.NET, npm, Trivy) |
 
 ## Stack technique
 
@@ -99,6 +111,8 @@ L'application Angular démarre sur `http://localhost:4200`.
 - [Plan de tests et couverture](TESTING.md)
 - [Analyse de sécurité](SECURITY.md)
 - [Performance et budget front](PERF.md)
+- [Procédures d'exploitation](MAINTENANCE.md)
+- [Utilisation de l'IA dans le développement (US05)](docs/04-utilisation-ia.md)
 
 ## Tests
 
