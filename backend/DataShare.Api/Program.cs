@@ -196,3 +196,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Requis par WebApplicationFactory<Program> dans les tests d'intégration
+public partial class Program { }
