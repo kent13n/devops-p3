@@ -77,7 +77,7 @@ En environnement `Production`, le rate limiter est actif et Swagger est désacti
 ### Sauvegarde
 
 ```bash
-docker exec projet-3-db-1 pg_dump -U postgres -Fc datashare > backup-$(date +%Y%m%d).dump
+docker compose exec -T db pg_dump -U postgres -Fc datashare > backup-$(date +%Y%m%d).dump
 ```
 
 Fréquence recommandée : **quotidienne**, rétention 30 jours minimum.
@@ -88,10 +88,12 @@ Fréquence recommandée : **quotidienne**, rétention 30 jours minimum.
 # arrêter l'API pour éviter les connexions concurrentes
 docker compose stop api
 
-docker exec -i projet-3-db-1 pg_restore -U postgres -d datashare --clean < backup-YYYYMMDD.dump
+docker compose exec -T db pg_restore -U postgres -d datashare --clean < backup-YYYYMMDD.dump
 
 docker compose start api
 ```
+
+Les commandes `docker compose exec` s'affranchissent du nom du container (qui dépend du dossier cloné).
 
 ### Test de restore
 
@@ -103,12 +105,15 @@ Tester la procédure au moins une fois par trimestre sur un environnement hors-p
 
 Les blobs sont indépendants de la base. Un backup séparé est nécessaire.
 
+Le nom exact du volume dépend du nom du dossier compose (ex. `datashare_files-data` si le dossier s'appelle `datashare`). On le récupère dynamiquement via `docker compose ls` ou `docker volume ls | grep files-data`.
+
 ### Sauvegarde
 
 ```bash
+VOLUME=$(docker volume ls --format '{{.Name}}' | grep files-data)
 docker run --rm \
-  -v projet-3_files-data:/source:ro \
-  -v $(pwd)/backups:/backup \
+  -v "$VOLUME:/source:ro" \
+  -v "$(pwd)/backups:/backup" \
   alpine tar czf /backup/files-$(date +%Y%m%d).tar.gz -C /source .
 ```
 
@@ -116,10 +121,11 @@ docker run --rm \
 
 ```bash
 docker compose stop api
+VOLUME=$(docker volume ls --format '{{.Name}}' | grep files-data)
 
 docker run --rm \
-  -v projet-3_files-data:/target \
-  -v $(pwd)/backups:/backup:ro \
+  -v "$VOLUME:/target" \
+  -v "$(pwd)/backups:/backup:ro" \
   alpine sh -c "cd /target && tar xzf /backup/files-YYYYMMDD.tar.gz"
 
 docker compose start api
@@ -150,7 +156,7 @@ docker compose up -d --force-recreate api
 
 ```bash
 # Dans le container db
-docker exec -it projet-3-db-1 psql -U postgres -c "ALTER USER postgres WITH PASSWORD '<nouveau-mdp>';"
+docker compose exec db psql -U postgres -c "ALTER USER postgres WITH PASSWORD '<nouveau-mdp>';"
 
 # Mettre à jour ConnectionStrings__DefaultConnection dans la conf api, puis :
 docker compose up -d --force-recreate api
@@ -271,7 +277,7 @@ Exemple de requête Loki :
 1. Arrêter l'API : `docker compose stop api`
 2. Identifier la dernière migration appliquée avec succès :
    ```bash
-   docker exec projet-3-db-1 psql -U postgres -d datashare -c 'SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;'
+   docker compose exec -T db psql -U postgres -d datashare -c 'SELECT "MigrationId" FROM "__EFMigrationsHistory" ORDER BY "MigrationId" DESC LIMIT 1;'
    ```
 3. Rollback : `dotnet ef database update <MigrationPrécédente> --project DataShare.Infrastructure --startup-project DataShare.Api --connection "$PROD_CS"`
 4. Si la migration a écrit des données incohérentes : restaurer la DB depuis le backup (§4)

@@ -187,10 +187,10 @@ Pour le MVP, on émet un **access token de 24h sans refresh token**. Avantages :
 
 | Niveau | Outil | Cible |
 |---|---|---|
-| Unit tests back | **xUnit + FluentAssertions + Moq** | Use cases isolés (génération de token, calcul d'expiration, validators) |
-| Tests d'intégration back | **Testcontainers.PostgreSQL** | Endpoints critiques avec une vraie base PostgreSQL en container temporaire |
-| Unit tests front | **Vitest** | Services Angular et logique des composants |
-| End-to-end | **Playwright** | 2-3 scénarios critiques : inscription → upload → download, login → suppression, expiration |
+| Unit tests back | **xUnit + AwesomeAssertions + NSubstitute + MockQueryable** | Use cases isolés (génération de token, calcul d'expiration, parsers, services Application) |
+| Tests d'intégration back | **Testcontainers.PostgreSQL + WebApplicationFactory** | Endpoints complets avec une vraie base PostgreSQL en container temporaire |
+| Unit tests front | **Vitest** | Services Angular, guards, interceptors, composants |
+| End-to-end | **Playwright** | 3 scénarios critiques : inscription/connexion/logout, upload+download connecté, upload protégé+download |
 
 ### Justification
 
@@ -218,27 +218,27 @@ L'objectif de couverture est fixé à **70 %** (seuil indicatif des specs). Une 
 | Compromis MVP | Pourquoi acceptable | Évolution prévue |
 |---|---|---|
 | Access token 24h sans refresh | Simplicité, suffisant pour démo | Refresh token rotatif (étape ultérieure) |
-| Pas de rate limiting | Pas d'attaquant pendant la démo | Middleware ASP.NET `RateLimiter` à activer |
 | Stockage filesystem (mono-host) | Démo contrainte à un seul serveur | Bascule vers S3/MinIO via `IFileStorageService` |
 | Pas d'antivirus à l'upload | MVP, scope limité | Intégration ClamAV via stream |
 | Pas d'email de confirmation | Simplification UX MVP | SendGrid / Mailgun + lien de confirmation |
 | Token JWT en `localStorage` côté Angular | Simplicité, pas de back-channel | Cookie httpOnly + double-submit token |
 | Pas de pagination de l'historique | Volume modéré attendu | Pagination keyset une fois > 100 fichiers / user |
 
-Toutes ces évolutions sont documentées dans `MAINTENANCE.md` (étape 5) avec leur niveau de priorité.
+Toutes ces évolutions sont documentées dans [`MAINTENANCE.md`](../MAINTENANCE.md) avec leur niveau de priorité.
 
 ## 12. Synthèse des dépendances principales
 
-### Back-end (.NET)
+### Back-end (.NET 10)
 
-- `Microsoft.AspNetCore.App` (8.0)
-- `Microsoft.EntityFrameworkCore` (10.x) + `Npgsql.EntityFrameworkCore.PostgreSQL`
+- `Microsoft.AspNetCore.App` (.NET 10)
+- `Microsoft.EntityFrameworkCore` + `Npgsql.EntityFrameworkCore.PostgreSQL`
 - `Microsoft.AspNetCore.Identity.EntityFrameworkCore`
 - `Microsoft.AspNetCore.Authentication.JwtBearer`
-- `FluentValidation.AspNetCore`
+- `BCrypt.Net-Next` (hash des mots de passe fichier)
 - `Serilog.AspNetCore` + `Serilog.Sinks.Console`
 - `Swashbuckle.AspNetCore` (Swagger UI)
-- Tests : `xUnit`, `FluentAssertions`, `Moq`, `Testcontainers.PostgreSql`
+- Rate limiting via `Microsoft.AspNetCore.RateLimiting` (intégré)
+- Tests : `xUnit`, `AwesomeAssertions`, `NSubstitute`, `MockQueryable.NSubstitute`, `Testcontainers.PostgreSql`, `Microsoft.AspNetCore.Mvc.Testing`
 
 ### Front-end (Angular)
 

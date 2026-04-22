@@ -42,7 +42,7 @@ docker compose up --build
 L'application est accessible sur :
 - **http://localhost** — interface web
 - **http://localhost/api/health** — vérification de l'API
-- **http://localhost:5432** — PostgreSQL (accès direct)
+- **localhost:5432** — PostgreSQL en accès direct pour le dev (à retirer du `docker-compose.yml` en production)
 
 ## Développement local (sans Docker)
 
@@ -96,9 +96,16 @@ L'application Angular démarre sur `http://localhost:4200`.
 │   ├── 01-architecture.md          # Architecture de la solution
 │   ├── 02-modele-donnees.md        # Modèle conceptuel de données
 │   ├── 03-choix-technologiques.md  # Justification des choix techniques
+│   ├── 04-utilisation-ia.md        # Workflow IA sur US05 (livrable OC)
+│   ├── checklist-oc.md             # Conformité OpenClassrooms
+│   ├── autoevaluation.pdf          # Grille d'autoévaluation OC remplie
+│   ├── specifications.pdf          # Cahier des charges original
 │   ├── api/openapi.yaml            # Contrat d'interface OpenAPI 3.0
-│   └── diagrams/                   # Diagrammes (architecture, MCD, séquences)
+│   ├── diagrams/                   # Diagrammes (architecture, MCD, séquences)
+│   └── soutenance/                 # Slide deck Marp + guide d'export
 ├── docker-compose.yml
+├── TESTING.md, SECURITY.md, PERF.md, MAINTENANCE.md
+├── LICENSE
 └── README.md
 ```
 

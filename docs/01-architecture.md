@@ -12,7 +12,7 @@ Le choix d'une SPA + API JSON sépare clairement les préoccupations : l'expéri
 
 L'authentification est portée par **ASP.NET Identity**, avec délivrance d'un **JWT Bearer** valide 24 heures. Identity gère le hachage PBKDF2 + sel automatiquement. Toutes les routes protégées vérifient le token via le middleware standard `AddJwtBearer`.
 
-L'expiration automatique des fichiers est gérée par un **`BackgroundService`** intégré au process API : il scanne toutes les heures la table `StoredFile` pour les entrées expirées, supprime les blobs sur disque et purge la base. Pas de cron externe à orchestrer — un seul process à monitorer.
+L'expiration automatique des fichiers est gérée par un **`BackgroundService`** intégré au process API : toutes les heures, il exécute un cycle en **deux phases**. Phase 1 — pour chaque fichier dont `ExpiresAt` est dépassé, il supprime le blob du disque et marque la ligne comme purgée (`IsPurged = true`), ce qui la retire du téléchargement mais la laisse visible dans l'historique. Phase 2 — pour chaque ligne purgée depuis plus de 30 jours, il fait un hard-delete de la ligne `StoredFile` (cascade `FileTag` automatique). Pas de cron externe à orchestrer — un seul process à monitorer.
 
 ## 2. Diagramme de conteneurs
 
@@ -33,7 +33,7 @@ L'expiration automatique des fichiers est gérée par un **`BackgroundService`**
 | `db-data` | named volume | `db:/var/lib/postgresql/data` | Données PostgreSQL persistantes |
 | `files-data` | bind mount sur host | `api:/var/datashare/files` | Blobs des fichiers téléversés |
 
-**Réseau** : un seul réseau bridge Docker par défaut (`datashare_default`). Seul le port 80 du conteneur `web` est exposé à l'host. L'API et la base de données ne sont pas accessibles directement depuis l'extérieur — l'API est joignable uniquement via le reverse proxy nginx.
+**Réseau** : un seul réseau bridge Docker nommé explicitement `datashare` (cf. `docker-compose.yml`). En configuration par défaut, `web` expose le port 80 et `db` expose le port 5432 pour le développement local (accès direct depuis un client SQL). En production, le port 5432 doit être retiré du compose pour que seule la SPA soit accessible depuis l'extérieur.
 
 ## 4. Architecture interne du back-end (Clean Architecture)
 
@@ -113,8 +113,8 @@ Quatre flux critiques sont documentés ci-dessous.
 
 1. L'utilisateur saisit email + mot de passe dans la modale de register/login
 2. Angular envoie `POST /api/auth/register` (ou `/api/auth/login`)
-3. L'API valide les inputs (FluentValidation), passe par `UserManager` (Identity) pour créer/vérifier le user
-4. Génération du JWT (claims : `sub` = userId, `email`, `exp` = now + 24h) signé HS256
+3. L'API valide les inputs (DataAnnotations + `Validator.TryValidateObject`), passe par `UserManager` (Identity) pour créer/vérifier le user
+4. Génération du JWT (claims : `sub` = userId, `email`, `jti`, `exp` = now + 24h) signé HS256
 5. Réponse `{ user, token, expiresAt }`
 6. Angular stocke le token et la `currentUser` signal, redirige vers `/my-files`
 
@@ -149,10 +149,10 @@ Quatre flux critiques sont documentés ci-dessous.
 
 ![Séquence — Expiration automatique](./diagrams/sequence-purge.jpg)
 
-1. Un `BackgroundService` (`ExpiredFilesCleanupService`) tourne en continu dans le process API
-2. Toutes les heures (`Task.Delay(TimeSpan.FromHours(1))`) il interroge la base : `SELECT * FROM "StoredFile" WHERE "ExpiresAt" < NOW()`
-3. Pour chaque fichier expiré : suppression du blob via `IFileStorageService.DeleteAsync(storagePath)`, puis suppression de la ligne `StoredFile` (cascade `FileTag` automatique)
-4. Logs structurés Serilog : `{ event: "file_purged", fileId, originalName, expiredSinceMinutes }`
+1. Un `BackgroundService` (`ExpiredFilesCleanupService`) tourne en continu dans le process API, intervalle `Task.Delay(TimeSpan.FromHours(1))`
+2. **Phase 1 — purge des blobs** : sélection de `StoredFile` avec `ExpiresAt < NOW()` et `IsPurged = false`. Pour chaque ligne, suppression du blob via `IFileStorageService.DeleteAsync`, puis `IsPurged = true` et `StoragePath = ""` (la ligne reste visible dans l'historique utilisateur, flag `isPurged: true` côté DTO)
+3. **Phase 2 — hard-delete** : sélection de `StoredFile` avec `IsPurged = true` et `ExpiresAt < NOW() - 30 jours` (via l'index composite `(IsPurged, ExpiresAt)`). Suppression définitive des lignes (cascade `FileTag`)
+4. Logs Serilog : `file.purged` (phase 1, avec `FileId`, `OriginalName`, `expiredSinceMinutes`) et `file.hard_deleted` (phase 2)
 5. En cas d'erreur sur un fichier (blob déjà supprimé, base verrouillée…), on log et on continue avec le suivant — pas de rollback global
 
 ## 8. Stockage des fichiers — choix et abstraction
@@ -183,30 +183,32 @@ Pour basculer en production vers AWS S3, MinIO, Azure Blob ou n'importe quel aut
 - Enrichissements : `MachineName`, `EnvironmentName`, `CorrelationId` (middleware)
 - Événements clés tracés : `auth.login.success`, `auth.login.failure`, `file.uploaded`, `file.downloaded`, `file.deleted`, `file.purged`, `error.unhandled`
 
-Détails sur les métriques et le suivi de performance dans `PERF.md` (étape 5).
+Détails sur les métriques et le suivi de performance dans [`PERF.md`](../PERF.md).
 
 ## 10. Sécurité — synthèse
 
-Détails et plan d'action complet dans `SECURITY.md` (étape 5). En synthèse, ce qui est en place dès le MVP :
+Détails et plan d'action complet dans [`SECURITY.md`](../SECURITY.md). En synthèse, ce qui est en place dès le MVP :
 
-- Hash de mot de passe : PBKDF2 via ASP.NET Identity
+- Hash des mots de passe comptes : PBKDF2 + HMAC-SHA256 (défaut ASP.NET Identity)
+- Hash des mots de passe fichier : BCrypt (BCrypt.Net-Next, cost factor 11)
 - JWT signé HS256, secret en variable d'environnement (jamais en clair dans le code)
-- Validation client + serveur sur tous les inputs (FluentValidation côté API, Reactive Forms côté Angular)
-- Vérification d'ownership systématique sur DELETE et historique
-- Tokens de téléchargement non prédictibles (32 octets entropy)
+- Validation client + serveur sur tous les inputs (DataAnnotations + `Validator.TryValidateObject` côté API, Reactive Forms côté Angular)
+- Vérification d'ownership systématique sur DELETE et historique — anti-IDOR par réponse 404 indiscernable
+- Rate limiter partitionné par IP (10 uploads/min, 20 downloads/min)
+- Tokens de téléchargement non prédictibles (32 octets entropy, base64url)
 - Mot de passe fichier : envoyé en POST body, jamais en query string
 - Extensions de fichiers interdites filtrées à l'upload
 - Cascade DB sur suppression pour éviter les orphelins
 
 ## 11. Hors-scope MVP — évolutions identifiées
 
-Listées explicitement pour anticiper les questions et alimenter `MAINTENANCE.md` :
+Listées explicitement pour anticiper les questions et alimenter [`MAINTENANCE.md`](../MAINTENANCE.md) :
 
 - Refresh tokens (actuel : access token 24h sans renouvellement)
-- Rate limiting (anti-abus, surtout pour l'upload anonyme)
 - Stockage objet distribué (S3/MinIO) — l'abstraction est en place, l'implémentation reste à écrire
 - Antivirus à l'upload (ClamAV ou équivalent)
 - Email de confirmation à l'inscription
 - Métriques Prometheus / dashboard Grafana
 - Authentification à double facteur (2FA / TOTP) — ASP.NET Identity le supporte nativement
 - Notifications (webhook ou email) à l'upload, à l'expiration imminente
+- HTTPS + HTTP/2 + Brotli (nécessite certificat TLS)

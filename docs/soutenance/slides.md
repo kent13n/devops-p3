@@ -40,7 +40,15 @@ Kentin — 2026-04-19
 
 ---
 
+<!-- _class: dense-table -->
+
 ## User stories livrées
+
+<style scoped>
+  table { font-size: 0.65em; margin: 0 auto; }
+  td, th { padding: 4px 8px; }
+  p:last-of-type { text-align: center; margin-top: .5em; }
+</style>
 
 | ID | Story | Statut |
 |---|---|---|
@@ -52,14 +60,19 @@ Kentin — 2026-04-19
 | US06 | Suppression d'un fichier par son propriétaire | ✅ |
 | US07 | Upload anonyme sans inscription | ✅ |
 | US08 | Tags sur les fichiers (utilisateurs connectés) | ✅ |
-| **US09** | **Protection par mdp** | **Absorbée dans US01** — le mdp est demandé au moment de l'upload |
+| US09 | Protection par mdp | ✅ |
 | US10 | Expiration automatique (1–7 jours) | ✅ |
 
-**6 US obligatoires + 3 optionnelles livrées.** US09 couverte fonctionnellement au sein d'US01.
+**6 US obligatoires + 3 optionnelles livrées.**
 
 ---
 
 ## Stack technique
+
+<style scoped>
+  table { font-size: 0.7em; margin: 0 auto; }
+  td, th { padding: 6px 10px; }
+</style>
 
 | Couche | Techno | Pourquoi |
 |---|---|---|
@@ -73,6 +86,10 @@ Kentin — 2026-04-19
 ---
 
 ## Architecture Clean
+
+<style scoped>
+  pre { font-size: 0.6em; margin: 0 auto; }
+</style>
 
 ```
 ┌─────────────────┐
@@ -99,22 +116,64 @@ Les dépendances pointent **toujours vers Domain**. Application ne connaît pas 
 
 ## Modèle de données
 
-![width:850px](../diagrams/mcd.jpg)
+<style scoped>
+  .cols { display: flex; gap: 2em; align-items: flex-start; }
+  .cols > div:first-child { flex: 1.3; }
+  .cols > div:last-child { flex: 1; font-size: 0.9em; }
+  .cols img { max-width: 90%; height: auto; display: block; margin: 0 auto; }
+</style>
 
-4 entités principales : `AspNetUsers` (Identity), `StoredFiles`, `Tags`, `FileTags` (pivot N-N tag par owner). Soft-delete par flag `IsPurged` + `ExpiresAt`.
+<div class="cols">
+<div>
+
+![](../diagrams/mcd.jpg)
+
+</div>
+<div>
+
+**4 entités principales** :
+
+- `AspNetUsers` (Identity)
+- `StoredFiles`
+- `Tags`
+- `FileTags` (pivot N-N, tag par owner)
+
+**Soft-delete** par flag `IsPurged` + `ExpiresAt`.
+
+</div>
+</div>
 
 ---
 
 ## Déploiement Docker
 
-![width:600px](../diagrams/architecture.jpg)
+<style scoped>
+  .cols { display: flex; gap: 2em; align-items: flex-start; }
+  .cols > div:first-child { flex: 1; }
+  .cols > div:last-child { flex: 1.2; font-size: 0.9em; }
+  .cols img { max-width: 100%; max-height: 440px; height: auto; width: auto; display: block; margin: 0 auto; }
+</style>
 
-3 services sur le réseau `datashare` :
+<div class="cols">
+<div>
+
+![](../diagrams/architecture.jpg)
+
+</div>
+<div>
+
+**3 services sur le réseau `datashare`** :
+
 - **web** (nginx + Angular build) — reverse proxy sur `/api/`
 - **api** (.NET 10) — métier + stockage
 - **db** (Postgres 16) — persistance
 
-Volumes : `db-data` (Postgres) et `files-data` (blobs). Démarrage en une commande : `docker compose up --build`.
+**Volumes** : `db-data` (Postgres) et `files-data` (blobs).
+
+**Démarrage** en une commande : `docker compose up --build`.
+
+</div>
+</div>
 
 ---
 
@@ -141,7 +200,23 @@ Scénarios E2E : inscription/connexion/logout, upload+download connecté, upload
 
 ## Qualité en CI
 
-![width:420px](../backend-coverage-screenshot.png) ![width:420px](../ci-green.png)
+<style scoped>
+  .cols { display: flex; gap: 2em; align-items: center; }
+  .cols > div:first-child { flex: 1; display: flex; flex-direction: column; gap: 0.6em; }
+  .cols > div:last-child { flex: 1; font-size: 0.85em; }
+  .cols img { max-width: 100%; max-height: 210px; width: auto; height: auto; display: block; margin: 0 auto; }
+  .metric { font-size: 1.4em; color: #BA681F; font-weight: 700; margin-bottom: 0.4em; }
+</style>
+
+<div class="cols">
+<div>
+
+![](../backend-coverage-screenshot.png)
+
+![](../ci-green.png)
+
+</div>
+<div>
 
 <div class="metric">Couverture 94 %</div>
 
@@ -149,11 +224,31 @@ Scénarios E2E : inscription/connexion/logout, upload+download connecté, upload
 - **Gate automatique** dans le workflow GitHub Actions : build rouge si couverture < 70 %
 - 3 jobs parallèles : backend, frontend, scans sécurité
 
+</div>
+</div>
+
 ---
 
 ## Sécurité & Performance
 
-![width:420px](../trivy-api.png) ![width:420px](../lighthouse-mobile.png)
+<style scoped>
+  .cols { display: flex; gap: 2em; align-items: center; }
+  .cols > div:first-child { flex: 1; display: flex; flex-direction: column; gap: 0.6em; }
+  .cols > div:last-child { flex: 1.3; font-size: 0.7em; }
+  .cols img { max-width: 100%; max-height: 210px; width: auto; height: auto; display: block; margin: 0 auto; }
+  .cols table { font-size: 1em; margin: 0 0 0.8em 0; }
+  .cols td, .cols th { padding: 3px 6px; }
+</style>
+
+<div class="cols">
+<div>
+
+![](../trivy-api.png)
+
+![](../lighthouse-mobile.png)
+
+</div>
+<div>
 
 | Axe | Mesure | Cible | Résultat |
 |---|---|---|---|
@@ -161,14 +256,22 @@ Scénarios E2E : inscription/connexion/logout, upload+download connecté, upload
 | Trivy image web | HIGH + CRITICAL | 0 | **0** |
 | `dotnet list --vulnerable` | toutes sévérités | 0 | **0** |
 | `npm audit` | HIGH + | 0 | **0** |
-| Lighthouse mobile | Perf, A11y, BP, SEO | ≥ 80 | **98 / 100 / 100 / 100** |
+| Lighthouse mobile | Perf / A11y / BP / SEO | ≥ 80 | **98 / 100 / 100 / 100** |
 | k6 (10 VUs, 2 min) | p95 latence | < 2 s | **14 ms** |
 
-Mesures en place : BCrypt sur mdp fichier, PBKDF2 Identity, JWT HS256, rate limiter par IP, anti-IDOR (404 indiscernable), validation d'extension, `X-Content-Type-Options: nosniff`.
+Mesures : BCrypt, PBKDF2 Identity, JWT HS256, rate limiter par IP, anti-IDOR (404 indiscernable), validation d'extension, `X-Content-Type-Options: nosniff`.
+
+</div>
+</div>
 
 ---
 
 ## Workflow IA (US05)
+
+<style scoped>
+  p, ul { margin: 0.4em 0; font-size: 0.92em; }
+  li { margin: 0.2em 0; }
+</style>
 
 **Pourquoi US05** — périmètre clair, auto-contenu, UI riche, non-critique pour la démo si l'IA échoue.
 
@@ -184,6 +287,11 @@ Mesures en place : BCrypt sur mdp fichier, PBKDF2 Identity, JWT HS256, rate limi
 ---
 
 ## Conclusion & roadmap
+
+<style scoped>
+  p, ul, ol { margin: 0.3em 0; font-size: 0.85em; }
+  li { margin: 0.15em 0; }
+</style>
 
 **Atteint** — MVP complet, 6/6 US obligatoires + 3 optionnelles, couverture 94 %, CI + gate, Lighthouse 98, Trivy 0/0, documentation exhaustive (TESTING, SECURITY, PERF, MAINTENANCE, 04-utilisation-ia).
 

@@ -76,6 +76,7 @@ Table gérée par Identity. Voir la documentation officielle Microsoft pour le d
 | `DownloadToken` | varchar(64) | not null, unique | Token cryptographiquement sûr, base64url, généré via `RandomNumberGenerator` (32 octets → 43 caractères) |
 | `PasswordHash` | varchar(255) | nullable | Hash du mot de passe de protection, NULL si non protégé |
 | `ExpiresAt` | timestamptz | not null | Date/heure absolue d'expiration (UTC) |
+| `IsPurged` | boolean | not null, default false | `true` quand le blob a été supprimé par la phase 1 de purge ; la ligne reste visible dans l'historique jusqu'à la phase 2 |
 | `CreatedAt` | timestamptz | not null, default now() | Date/heure d'upload (UTC) |
 
 **Index** :
@@ -84,11 +85,12 @@ Table gérée par Identity. Voir la documentation officielle Microsoft pour le d
 |---|---|---|---|
 | `IX_StoredFile_DownloadToken` | `DownloadToken` | Unique | Recherche systématique par token sur les routes publiques `/api/download/{token}` |
 | `IX_StoredFile_OwnerId` | `OwnerId` | Standard | Construction de l'historique |
-| `IX_StoredFile_ExpiresAt` | `ExpiresAt` | Standard | Scan horaire du `BackgroundService` de purge |
+| `IX_StoredFile_ExpiresAt` | `ExpiresAt` | Standard | Scan horaire du `BackgroundService` de purge (phase 1) |
+| `IX_StoredFile_IsPurged_ExpiresAt` | `(IsPurged, ExpiresAt)` | Composite | Phase 2 du cleanup : sélection des lignes purgées depuis plus de 30 jours |
 
 **Règles de gestion encodées** :
 
-- `SizeBytes` ≤ 1 Go : validé côté API (FluentValidation) et côté front (Angular validators)
+- `SizeBytes` ≤ 1 Go : validé côté API (DataAnnotations) et côté front (Angular validators)
 - `ExpiresAt` ≤ `CreatedAt` + 7 jours : validé à l'upload
 - `PasswordHash` ≥ 6 caractères en clair avant hachage : validé sur le mot de passe en clair, pas sur le hash
 
@@ -132,11 +134,18 @@ Toutes les clés primaires sont en `uuid` (Guid côté .NET).
 
 **Compromis assumé** : les UUID prennent 16 octets contre 8 pour un bigint, et les index sont légèrement plus lourds. Négligeable à l'échelle d'un MVP.
 
-### 4.2 Suppression physique (hard delete) plutôt que soft delete
+### 4.2 Deux régimes de suppression
 
-La spécification US06 est explicite : « la suppression entraîne la suppression physique du fichier sur le système de stockage ainsi que de toutes ses métadonnées » et « la suppression est irréversible ». Idem pour US10 sur l'expiration. On respecte à la lettre — pas de colonne `DeletedAt`.
+DataShare applique deux politiques distinctes selon l'origine de la suppression :
 
-**Conséquence** : aucune trace en base après suppression. Les logs Serilog garderont une trace applicative (« file X deleted by user Y at T »), mais la base est nettoyée.
+**Suppression volontaire (US06)** — hard-delete immédiat. La spécification exige « la suppression physique du fichier sur le système de stockage ainsi que de toutes ses métadonnées » et « la suppression est irréversible ». L'endpoint `DELETE /api/files/{id}` supprime le blob puis la ligne `StoredFile` (cascade sur `FileTag`). Aucune trace en base après exécution.
+
+**Expiration automatique (US10)** — soft-delete en 2 phases via le flag `IsPurged` :
+
+1. **Phase 1** (horaire) — dès que `ExpiresAt` est dépassé, le `BackgroundService` supprime le blob du volume `files-data`, positionne `IsPurged = true` et vide `StoragePath`. La ligne reste visible dans l'historique « Mes fichiers » marquée comme *expirée*, sans possibilité de téléchargement. Permet à l'utilisateur de retrouver le nom, la date d'upload et les tags d'un fichier qu'il a partagé récemment.
+2. **Phase 2** (même service) — 30 jours après l'expiration, la ligne est définitivement supprimée (cascade sur `FileTag`).
+
+**Conséquence** : aucune donnée de fichier ne subsiste plus de 30 jours au-delà de son expiration. Les logs Serilog conservent une trace applicative (`file.uploaded`, `file.purged`, `file.hard_deleted`).
 
 ### 4.3 `OwnerId` nullable plutôt que table dédiée pour l'anonyme
 
@@ -148,7 +157,7 @@ Choix de garder une seule table `StoredFile` avec un `OwnerId` nullable, plutôt
 - Le `BackgroundService` de purge n'a qu'une seule table à scanner
 - Les statistiques sont plus simples (« combien de fichiers actifs total »)
 
-**Inconvénient assumé** : on perd la garantie SQL « un fichier connecté a forcément un owner ». Cette garantie est portée par la couche application (FluentValidation) : l'endpoint unique `POST /api/files` accepte l'authentification optionnelle et affecte `OwnerId` automatiquement selon la présence d'un JWT valide.
+**Inconvénient assumé** : on perd la garantie SQL « un fichier connecté a forcément un owner ». Cette garantie est portée par la couche application : l'endpoint unique `POST /api/files` accepte l'authentification optionnelle et affecte `OwnerId` automatiquement selon la présence d'un JWT valide.
 
 ### 4.4 Tags scopés utilisateur plutôt que partagés
 
@@ -156,13 +165,19 @@ Choix justifié plus haut (§ 2.3). En complément : un modèle « tags partagé
 
 ## 5. Migration EF Core
 
-La création initiale de la base sera faite via une migration EF Core (générée à l'étape 2 lors de l'init du socle technique). Stratégie :
+La création de la base se fait via les migrations EF Core versionnées dans `backend/DataShare.Infrastructure/Migrations/`. Les migrations actuellement présentes, dans l'ordre chronologique :
 
-- Migrations versionnées dans `backend/DataShare.Infrastructure/Migrations/`
-- Nom de la migration initiale : `InitialCreate`
-- Application au démarrage en environnement Development (auto-migrate) ; en production, appliquée explicitement via `dotnet ef database update` ou un script de déploiement
+| Migration | Contenu |
+|---|---|
+| `InitialIdentity` | Tables ASP.NET Identity (`AspNetUsers`, `AspNetRoles`, etc.) |
+| `AddFileEntities` | `StoredFile`, `Tag`, `FileTag` + contraintes et indexes de base |
+| `AddPurgedFlag` | Ajout du flag `IsPurged` sur `StoredFile` pour la purge en 2 phases |
+| `ReplaceIsPurgedIndexWithComposite` | Remplace l'index simple sur `IsPurged` par un index composite `(IsPurged, ExpiresAt)` plus sélectif pour la phase 2 du cleanup |
 
-Le script SQL équivalent sera également produit (`scripts/init-db.sql`) pour les évaluateurs qui voudraient instancier la base sans passer par EF Core.
+**Stratégie** :
+
+- Application au démarrage en environnement Development (`DATASHARE_AUTO_MIGRATE=true`)
+- En production, appliquée explicitement via `dotnet ef database update` ou un script de déploiement (voir `MAINTENANCE.md` §7)
 
 ## 6. Traçabilité fonctionnelle
 
@@ -174,9 +189,9 @@ Vérification que chaque US du MVP a son support en base :
 | US02 | Download via lien | `StoredFile.DownloadToken`, `StoredFile.PasswordHash`, `StoredFile.ExpiresAt` |
 | US03 | Création de compte | `AspNetUsers` (Identity) |
 | US04 | Connexion | `AspNetUsers` (Identity) |
-| US05 | Historique | `StoredFile.OwnerId`, `StoredFile.CreatedAt`, `StoredFile.ExpiresAt` (calcul `isExpired`) |
+| US05 | Historique | `StoredFile.OwnerId`, `StoredFile.CreatedAt`, `StoredFile.ExpiresAt`, `StoredFile.IsPurged` (calcul `isExpired` / `isPurged`) |
 | US06 | Suppression | `StoredFile` DELETE physique + cascade `FileTag` |
 | US07 | Upload anonyme | `StoredFile.OwnerId = NULL` |
 | US08 | Tags | `Tag`, `FileTag`, contrainte unique `(OwnerId, Name)` |
 | US09 | Mot de passe fichier | `StoredFile.PasswordHash` |
-| US10 | Expiration auto | `StoredFile.ExpiresAt` + index, `BackgroundService` côté Application |
+| US10 | Expiration auto | `StoredFile.ExpiresAt`, `StoredFile.IsPurged`, index `(IsPurged, ExpiresAt)`, `BackgroundService` côté Infrastructure (phase 1 purge blob + phase 2 hard-delete après 30 j) |
