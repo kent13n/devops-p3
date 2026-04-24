@@ -7,14 +7,20 @@ info:
     **Périmètre MVP** : authentification, upload (connecté + anonyme), téléchargement via lien (avec mot de passe optionnel), historique, suppression, tags, expiration automatique.
 
     **Authentification** : JWT Bearer. Token retourné à l'inscription et à la connexion, valide 24 heures.
+
+    **Sécurité transversale** :
+    - Anti-IDOR : les endpoints `DELETE` renvoient **404 indiscernable** quand la ressource n'appartient pas à l'utilisateur (même réponse que si elle n'existe pas), pour empêcher l'énumération.
+    - Rate limiting par IP : **10 uploads/min** sur `POST /api/files`, **20 downloads/min** sur `POST /api/download/{token}`. Dépassement → `429 Too Many Requests`.
+    - Toutes les réponses portent le header `X-Content-Type-Options: nosniff`.
+    - Les liens de téléchargement utilisent un token cryptographique 256 bits (32 octets `RandomNumberGenerator` → 43 caractères base64url).
   version: 1.0.0
   contact:
     name: DataShare
 servers:
-  - url: http://localhost:8080
-    description: Environnement local Docker
+  - url: http://localhost
+    description: Environnement local Docker (via reverse proxy nginx)
   - url: http://localhost:5000
-    description: Environnement de développement .NET (sans Docker)
+    description: Environnement de développement .NET (sans Docker, API directement)
 
 tags:
   - name: Auth
@@ -117,10 +123,12 @@ paths:
 
         **Contraintes** :
         - Taille maximale : 1 Go (1 073 741 824 octets)
-        - Extensions interdites : `.exe`, `.bat`, `.cmd`, `.com`, `.scr`, `.msi`, `.sh`
+        - Extensions interdites (19) : `.exe`, `.bat`, `.cmd`, `.com`, `.scr`, `.msi`, `.sh`, `.hta`, `.vbs`, `.vbe`, `.js`, `.jse`, `.wsf`, `.wsh`, `.ps1`, `.psc1`, `.dll`, `.iso`, `.svg`
         - `expiresInDays` : entre 1 et 7, défaut 7
         - `password` (optionnel) : minimum 6 caractères si renseigné
         - `tags` (optionnel, ignoré si non authentifié) : tableau de strings ≤ 30 caractères chacun
+
+        **Rate limiting** : 10 uploads/min par IP. Dépassement → `429`.
       security:
         - bearerAuth: []
         - {}
@@ -151,6 +159,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit dépassé (10 uploads/min par IP)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     get:
       tags: [Files]
@@ -177,6 +191,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FileHistoryItem'
+        '400':
+          description: Valeur de `status` invalide (attendu `all`, `active` ou `expired`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: INVALID_STATUS
+                message: Le paramètre status doit valoir 'all', 'active' ou 'expired'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -199,14 +222,10 @@ paths:
           description: Fichier supprimé
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: L'utilisateur n'est pas propriétaire du fichier
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Fichier introuvable
+          description: |
+            Fichier introuvable **ou** n'appartenant pas à l'utilisateur authentifié.
+            Les deux cas renvoient 404 indiscernable pour empêcher l'énumération (anti-IDOR).
           content:
             application/json:
               schema:
@@ -286,7 +305,9 @@ paths:
                 type: integer
               description: Taille du fichier en octets
         '401':
-          description: Mot de passe absent ou incorrect (fichier protégé)
+          description: |
+            Mot de passe absent ou incorrect (fichier protégé).
+            Le code d'erreur est uniformément `INVALID_PASSWORD` — même réponse pour les deux cas (absent et incorrect), pour ne pas divulguer si la requête contenait un mot de passe correct.
           content:
             application/json:
               schema:
@@ -299,6 +320,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '410':
           description: Lien expiré
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit dépassé (20 downloads/min par IP)
           content:
             application/json:
               schema:
@@ -340,14 +367,10 @@ paths:
           description: Tag supprimé
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: L'utilisateur n'est pas propriétaire du tag
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Tag introuvable
+          description: |
+            Tag introuvable **ou** n'appartenant pas à l'utilisateur authentifié.
+            Les deux cas renvoient 404 indiscernable pour empêcher l'énumération (anti-IDOR).
           content:
             application/json:
               schema:
@@ -525,7 +548,7 @@ components:
 
     FileHistoryItem:
       type: object
-      required: [id, originalName, sizeBytes, mimeType, expiresAt, isExpired, isProtected, tags, createdAt]
+      required: [id, originalName, sizeBytes, mimeType, expiresAt, isExpired, isPurged, isProtected, tags, createdAt]
       properties:
         id:
           type: string
@@ -540,13 +563,19 @@ components:
         downloadUrl:
           type: string
           format: uri
-          description: URL de partage. Absente si le fichier est expiré.
+          nullable: true
+          description: URL de partage. `null` si le fichier est expiré ou purgé.
         expiresAt:
           type: string
           format: date-time
         isExpired:
           type: boolean
           description: True si `now > expiresAt` (calculé côté serveur)
+        isPurged:
+          type: boolean
+          description: |
+            True quand le blob a été supprimé par la phase 1 du cleanup service (soft-delete).
+            La ligne reste visible dans l'historique pendant 30 jours après expiration, sans possibilité de téléchargement.
         isProtected:
           type: boolean
         tags:
