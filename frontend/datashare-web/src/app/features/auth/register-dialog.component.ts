@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -11,7 +11,8 @@ import { LoginDialogComponent } from './login-dialog.component';
   standalone: true,
   imports: [ReactiveFormsModule, MatDialogModule],
   templateUrl: './register-dialog.component.html',
-  styleUrl: './auth-dialog.scss'
+  styleUrl: './auth-dialog.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RegisterDialogComponent {
   private fb = inject(FormBuilder);
@@ -21,8 +22,8 @@ export class RegisterDialogComponent {
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
 
-  errorMessage = '';
-  loading = false;
+  errorMessage = signal('');
+  loading = signal(false);
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -33,8 +34,8 @@ export class RegisterDialogComponent {
   submit(): void {
     if (this.form.invalid) return;
 
-    this.loading = true;
-    this.errorMessage = '';
+    this.loading.set(true);
+    this.errorMessage.set('');
 
     this.authService.register({
       email: this.form.value.email!,
@@ -46,11 +47,11 @@ export class RegisterDialogComponent {
         this.snackBar.open('Compte créé avec succès', 'OK', { duration: 3000 });
       },
       error: (err) => {
-        this.loading = false;
+        this.loading.set(false);
         if (err.status === 409) {
-          this.errorMessage = 'Cet email est déjà utilisé';
+          this.errorMessage.set('Cet email est déjà utilisé');
         } else {
-          this.errorMessage = 'Erreur lors de la création du compte';
+          this.errorMessage.set('Erreur lors de la création du compte');
         }
       }
     });

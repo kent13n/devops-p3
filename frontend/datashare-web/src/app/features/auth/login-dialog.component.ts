@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogRef, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -11,7 +11,8 @@ import { RegisterDialogComponent } from './register-dialog.component';
   standalone: true,
   imports: [ReactiveFormsModule, MatDialogModule],
   templateUrl: './login-dialog.component.html',
-  styleUrl: './auth-dialog.scss'
+  styleUrl: './auth-dialog.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoginDialogComponent {
   private fb = inject(FormBuilder);
@@ -21,8 +22,8 @@ export class LoginDialogComponent {
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
 
-  errorMessage = '';
-  loading = false;
+  errorMessage = signal('');
+  loading = signal(false);
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -32,8 +33,8 @@ export class LoginDialogComponent {
   submit(): void {
     if (this.form.invalid) return;
 
-    this.loading = true;
-    this.errorMessage = '';
+    this.loading.set(true);
+    this.errorMessage.set('');
 
     this.authService.login({
       email: this.form.value.email!,
@@ -45,8 +46,8 @@ export class LoginDialogComponent {
         this.snackBar.open('Connexion réussie', 'OK', { duration: 3000 });
       },
       error: () => {
-        this.loading = false;
-        this.errorMessage = 'Email ou mot de passe incorrect';
+        this.loading.set(false);
+        this.errorMessage.set('Email ou mot de passe incorrect');
       }
     });
   }

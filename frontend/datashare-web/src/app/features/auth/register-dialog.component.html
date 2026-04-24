@@ -44,16 +44,16 @@
       }
     </div>
 
-    @if (errorMessage) {
-      <p class="error-message" role="alert">{{ errorMessage }}</p>
+    @if (errorMessage()) {
+      <p class="error-message" role="alert">{{ errorMessage() }}</p>
     }
 
     <button type="button" class="link-switch" (click)="switchToLogin()">
       J'ai déjà un compte
     </button>
 
-    <button type="submit" class="btn-submit" [disabled]="loading || form.invalid">
-      {{ loading ? 'Création...' : 'Créer mon compte' }}
+    <button type="submit" class="btn-submit" [disabled]="loading() || form.invalid">
+      {{ loading() ? 'Création...' : 'Créer mon compte' }}
     </button>
   </form>
 </div>
